@@ -398,7 +398,7 @@ var panictests = []struct {
 }{
 	{"top", struct{}{}, "[section]\nname=value"},
 	{"section", &struct{ Section string }{}, "[section]\nname=value"},
-	{"subsection", &struct{ Section map[string]string }{}, "[section \"subsection\"]\nname=value"},
+	{"subsection", &struct{ Section string }{}, "[section \"subsection\"]\nname=value"},
 }
 
 func testPanic(t *testing.T, id string, config interface{}, gcfg string) {
@@ -439,5 +439,25 @@ func testUtf8Bom(t *testing.T, id string, in, out []byte) {
 func TestUtf8Boms(t *testing.T) {
 	for _, tt := range utf8bomtests {
 		testUtf8Bom(t, tt.id, tt.in, tt.out)
+	}
+}
+
+func TestStringStringMapSection(t *testing.T) {
+	res := &struct {
+		Section map[string]string
+	}{}
+	cfg := `
+	[section]
+	key = value
+	key2 = value2`
+	err := ReadStringInto(res, cfg)
+	if err != nil {
+		t.Error(err)
+	}
+	if res.Section["key"] != "value" {
+		t.Errorf("res.Section.Name=%q; want %q", res.Section["key"], "value")
+	}
+	if res.Section["key2"] != "value2" {
+		t.Errorf("res.Section.Name=%q; want %q", res.Section["key2"], "value2")
 	}
 }
