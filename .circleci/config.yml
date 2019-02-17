@@ -1,7 +1,7 @@
 version: 2
 
 test: &test
-  working_directory: /go/src/gopkg.in/gcfg.v1
+  working_directory: /go/src/github.com/peterebden/gcfg
   steps:
     - checkout
     - run: go version

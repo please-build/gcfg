@@ -8,8 +8,8 @@ import (
 	"os"
 	"strings"
 
-	"gopkg.in/gcfg.v1/scanner"
-	"gopkg.in/gcfg.v1/token"
+	"github.com/peterebden/gcfg/scanner"
+	"github.com/peterebden/gcfg/token"
 	"gopkg.in/warnings.v0"
 )
 
