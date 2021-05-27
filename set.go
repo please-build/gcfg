@@ -284,9 +284,8 @@ func set(c *warnings.Collector, cfg interface{}, sect, sub, name string,
 	if !vVar.IsValid() {
 		if err := setExtraDataInSection(vSect, name, value, l); err != nil {
 			return c.Collect(err)
-		} else {
-			return nil
 		}
+		return nil
 	}
 	// vVal is either single-valued var, or newly allocated value within multi-valued var
 	var vVal reflect.Value
