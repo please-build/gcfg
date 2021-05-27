@@ -346,12 +346,11 @@ func set(c *warnings.Collector, cfg interface{}, sect, sub, name string,
 }
 
 func setExtraDataInSection(vSect reflect.Value, key, value string, loc loc) *extraData {
-	if extraDataField := findExtraDataField(vSect); extraDataField == nil {
-		return &extraData{loc: loc}
-	} else {
+	if extraDataField := findExtraDataField(vSect); extraDataField != nil {
 		extraDataField.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(value))
 		return nil
 	}
+	return &extraData{loc: loc}
 }
 
 func findExtraDataField(vSect reflect.Value) *reflect.Value {

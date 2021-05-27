@@ -82,7 +82,6 @@ type cBoolS1 struct{ Bool bool }
 type cTxUnm struct{ Section cTxUnmS1 }
 type cTxUnmS1 struct{ Name unmarshalable }
 
-
 type anySection struct {
 	ExtraValues map[string]string
 }
