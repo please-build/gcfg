@@ -282,7 +282,11 @@ func set(c *warnings.Collector, cfg interface{}, sect, sub, name string,
 	vVar, t := fieldFold(vSect, name)
 	l.variable = &name
 	if !vVar.IsValid() {
-		return c.Collect(extraData{loc: l})
+		if err := setExtraDataInSection(vSect, name, value, l); err != nil {
+			return c.Collect(err)
+		} else {
+			return nil
+		}
 	}
 	// vVal is either single-valued var, or newly allocated value within multi-valued var
 	var vVal reflect.Value
@@ -339,4 +343,30 @@ func set(c *warnings.Collector, cfg interface{}, sect, sub, name string,
 		vVar.Set(reflect.Append(vVar, vVal))
 	}
 	return nil
+}
+
+func setExtraDataInSection(vSect reflect.Value, key, value string, loc loc) *extraData {
+	if extraDataField := findExtraDataField(vSect); extraDataField == nil {
+		return &extraData{loc: loc}
+	} else {
+		extraDataField.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(value))
+		return nil
+	}
+}
+
+func findExtraDataField(vSect reflect.Value) *reflect.Value {
+	value := vSect.FieldByName("ExtraValues")
+	if !value.IsValid() {
+		return nil
+	}
+
+	if value.Type() != reflect.TypeOf(map[string]string{}) {
+		return nil
+	}
+
+	if value.IsNil() {
+		value.Set(reflect.ValueOf(map[string]string{}))
+	}
+
+	return &value
 }

@@ -82,6 +82,19 @@ type cBoolS1 struct{ Bool bool }
 type cTxUnm struct{ Section cTxUnmS1 }
 type cTxUnmS1 struct{ Name unmarshalable }
 
+
+type anySection struct {
+	ExtraValues map[string]string
+}
+
+type cSubsectionAnyConfig struct {
+	Section map[string]*anySection
+}
+
+type cSectionAnyConfig struct {
+	Section anySection
+}
+
 type cNum struct {
 	N1 cNumS1
 	N2 cNumS2
@@ -268,6 +281,8 @@ var readtests = []struct {
 }}, {"type:textUnmarshaler", []readtest{
 	{"[section]\nname=value", &cTxUnm{Section: cTxUnmS1{Name: "value"}}, true},
 	{"[section]\nname=error", &cTxUnm{}, false},
+	{"[section]\nTest=test", &cSectionAnyConfig{anySection{ExtraValues: map[string]string{"Test": "test"}}}, true},
+	{"[section \"A\"]\nTest=test", &cSubsectionAnyConfig{map[string]*anySection{"A": {ExtraValues: map[string]string{"Test": "test"}}}}, true},
 }},
 }
 
