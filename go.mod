@@ -1,4 +1,4 @@
-module github.com/peterebden/gcfg
+module github.com/please-build/gcfg
 
 go 1.16
 
