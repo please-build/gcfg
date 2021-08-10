@@ -11,7 +11,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/peterebden/gcfg/types"
+	"github.com/please-build/gcfg/types"
 	"gopkg.in/warnings.v0"
 )
 

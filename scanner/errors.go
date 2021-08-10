@@ -11,7 +11,7 @@ import (
 )
 
 import (
-	"github.com/peterebden/gcfg/token"
+	"github.com/please-build/gcfg/token"
 )
 
 // In an ErrorList, an error is represented by an *Error.
