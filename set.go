@@ -344,26 +344,43 @@ func set(c *warnings.Collector, cfg interface{}, sect, sub, name string,
 	return nil
 }
 
-func setExtraDataInSection(vSect reflect.Value, key, value string, loc loc) *extraData {
-	if extraDataField := findExtraDataField(vSect); extraDataField != nil {
+func setExtraDataInSection(vSect reflect.Value, key, value string, loc loc) error {
+	if extraDataField := findExtraDataField(vSect); extraDataField == nil {
+		return &extraData{loc: loc}
+	} else if extraDataField.Type() == reflect.TypeOf(map[string]string{}) {
+		if extraDataField.IsNil() {
+			extraDataField.Set(reflect.ValueOf(map[string]string{key: value}))
+			return nil
+		}
 		extraDataField.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(value))
 		return nil
+	} else if extraDataField.Type() == reflect.TypeOf(map[string][]string{}) {
+		if extraDataField.IsNil() {
+			extraDataField.Set(reflect.ValueOf(map[string][]string{key: {value}}))
+			return nil
+		}
+		if v := extraDataField.MapIndex(reflect.ValueOf(key)); v.IsValid() {
+			vs := append(v.Interface().([]string), value)
+			extraDataField.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(vs))
+			return nil
+		}
+		extraDataField.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf([]string{value}))
+		return nil
+	} else {
+		return fmt.Errorf("extra data field must be of type map[string]string or map[string][]string, was %v", extraDataField.Type())
 	}
-	return &extraData{loc: loc}
 }
 
 func findExtraDataField(vSect reflect.Value) *reflect.Value {
-	value := vSect.FieldByName("ExtraValues")
+	var value reflect.Value
+	for i := 0; i < vSect.NumField(); i++ {
+		f := vSect.Type().Field(i)
+		if f.Tag.Get("gcfg") == "extra_values" {
+			value = vSect.Field(i)
+		}
+	}
 	if !value.IsValid() {
 		return nil
-	}
-
-	if value.Type() != reflect.TypeOf(map[string]string{}) {
-		return nil
-	}
-
-	if value.IsNil() {
-		value.Set(reflect.ValueOf(map[string]string{}))
 	}
 
 	return &value
