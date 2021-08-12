@@ -83,11 +83,19 @@ type cTxUnm struct{ Section cTxUnmS1 }
 type cTxUnmS1 struct{ Name unmarshalable }
 
 type anySection struct {
-	ExtraValues map[string]string
+	ExtraValues map[string]string `gcfg:"extra_values"`
+}
+
+type anySectionRepeatable struct {
+	ExtraValues map[string][]string `gcfg:"extra_values"`
 }
 
 type cSubsectionAnyConfig struct {
 	Section map[string]*anySection
+}
+
+type cSubsectionAnyConfigRepeatable struct {
+	Section map[string]*anySectionRepeatable
 }
 
 type cSectionAnyConfig struct {
@@ -280,8 +288,10 @@ var readtests = []struct {
 }}, {"type:textUnmarshaler", []readtest{
 	{"[section]\nname=value", &cTxUnm{Section: cTxUnmS1{Name: "value"}}, true},
 	{"[section]\nname=error", &cTxUnm{}, false},
+}}, {"anysection", []readtest{
 	{"[section]\nTest=test", &cSectionAnyConfig{anySection{ExtraValues: map[string]string{"Test": "test"}}}, true},
 	{"[section \"A\"]\nTest=test", &cSubsectionAnyConfig{map[string]*anySection{"A": {ExtraValues: map[string]string{"Test": "test"}}}}, true},
+	{"[section \"A\"]\nTest=test\nTest=test2", &cSubsectionAnyConfigRepeatable{map[string]*anySectionRepeatable{"A": {ExtraValues: map[string][]string{"Test": {"test", "test2"}}}}}, true},
 }},
 }
 
@@ -309,27 +319,25 @@ func testRead(t *testing.T, id string, tt readtest) {
 }
 
 func testReadInto(t *testing.T, id string, tt readtest, res interface{}) {
-	err := ReadStringInto(res, tt.gcfg)
-	if tt.ok {
-		if err != nil {
-			t.Errorf("%s fail: got error %v, wanted ok", id, err)
-			return
-		} else if !reflect.DeepEqual(res, tt.exp) {
-			t.Errorf("%s fail: got value %#v, wanted value %#v", id, res, tt.exp)
-			return
+
+	t.Run(id, func(t *testing.T) {
+		err := ReadStringInto(res, tt.gcfg)
+		if tt.ok {
+			if err != nil {
+				t.Errorf("%s fail: got error %v, wanted ok", id, err)
+				return
+			} else if !reflect.DeepEqual(res, tt.exp) {
+				t.Errorf("%s fail: got value %#v, wanted value %#v", id, res, tt.exp)
+				return
+			}
+		} else { // !tt.ok
+			if err == nil {
+				t.Errorf("%s fail: got value %#v, wanted error", id, res)
+				return
+			}
 		}
-		if !testing.Short() {
-			t.Logf("%s pass: got value %#v", id, res)
-		}
-	} else { // !tt.ok
-		if err == nil {
-			t.Errorf("%s fail: got value %#v, wanted error", id, res)
-			return
-		}
-		if !testing.Short() {
-			t.Logf("%s pass: got error %v", id, err)
-		}
-	}
+	})
+
 }
 
 func TestReadFileInto(t *testing.T) {
