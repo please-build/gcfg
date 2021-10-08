@@ -282,7 +282,7 @@ func set(c *warnings.Collector, cfg interface{}, sect, sub, name string,
 	vVar, t := fieldFold(vSect, name)
 	l.variable = &name
 	if !vVar.IsValid() {
-		if err := setExtraDataInSection(vSect, name, value, l); err != nil {
+		if ok, err := setExtraDataInSection(vSect, name, value, l); ok {
 			return c.Collect(err)
 		}
 		return nil
@@ -344,30 +344,30 @@ func set(c *warnings.Collector, cfg interface{}, sect, sub, name string,
 	return nil
 }
 
-func setExtraDataInSection(vSect reflect.Value, key, value string, loc loc) error {
+func setExtraDataInSection(vSect reflect.Value, key, value string, loc loc) (bool, error) {
 	if extraDataField := findExtraDataField(vSect); extraDataField == nil {
-		return &extraData{loc: loc}
+		return true, extraData{loc: loc}
 	} else if extraDataField.Type() == reflect.TypeOf(map[string]string{}) {
 		if extraDataField.IsNil() {
 			extraDataField.Set(reflect.ValueOf(map[string]string{key: value}))
-			return nil
+			return false, extraData{}
 		}
 		extraDataField.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(value))
-		return nil
+		return false, extraData{}
 	} else if extraDataField.Type() == reflect.TypeOf(map[string][]string{}) {
 		if extraDataField.IsNil() {
 			extraDataField.Set(reflect.ValueOf(map[string][]string{key: {value}}))
-			return nil
+			return false, extraData{}
 		}
 		if v := extraDataField.MapIndex(reflect.ValueOf(key)); v.IsValid() {
 			vs := append(v.Interface().([]string), value)
 			extraDataField.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(vs))
-			return nil
+			return false, extraData{}
 		}
 		extraDataField.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf([]string{value}))
-		return nil
+		return false, extraData{}
 	} else {
-		return fmt.Errorf("extra data field must be of type map[string]string or map[string][]string, was %v", extraDataField.Type())
+		return true, fmt.Errorf("extra data field must be of type map[string]string or map[string][]string, was %v", extraDataField.Type())
 	}
 }
 

@@ -483,3 +483,25 @@ func TestStringStringMapSection(t *testing.T) {
 		t.Errorf("res.Section.Name=%q; want %q", res.Section["key2"], "value2")
 	}
 }
+
+func TestFatalOnly(t *testing.T) {
+	var s = struct {
+		Foo struct{
+			Bar string
+		}
+	}{}
+
+	err := ReadStringInto(&s, "[Foo]\nBar = baz\n")
+	if err != nil {
+		t.Error(err)
+	}
+
+	err = ReadStringInto(&s, "[Foo]\nBar = baz\nBing = bong")
+	if err == nil {
+		t.Error(fmt.Errorf("Expected unexpected section bing"))
+	}
+
+	if FatalOnly(err) != nil {
+		t.Error(err)
+	}
+}
