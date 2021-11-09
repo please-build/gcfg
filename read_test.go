@@ -488,7 +488,7 @@ func TestStringStringMapSection(t *testing.T) {
 
 func TestFatalOnly(t *testing.T) {
 	var s = struct {
-		Foo struct{
+		Foo struct {
 			Bar string
 		}
 	}{}
