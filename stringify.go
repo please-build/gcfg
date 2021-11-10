@@ -30,12 +30,14 @@ func Stringify(config interface{}) (string, error) {
 		iniFieldName := iniKey(fieldStruct)
 
 		if fieldValue.Kind() == reflect.Struct {
-			res, err := stringifyStructFields(fieldValue)
+			iniVariableLines, err := stringifyStructFields(fieldValue)
 			if err != nil {
 				return "", err
 			}
 
-			s += fmt.Sprintf("[%s]\n%s\n", iniFieldName, res)
+			s += iniSectionLine(iniFieldName, "")
+			s += iniVariableLines
+			s += "\n"
 		} else if fieldValue.Kind() == reflect.Map {
 			if fieldStruct.Type.Key().Kind() != reflect.String {
 				return "", fmt.Errorf("The map keys must to be of string type, instead they are of %s type", fieldStruct.Type.Key().Kind())
@@ -69,30 +71,23 @@ func Stringify(config interface{}) (string, error) {
 				}
 
 				for subsection, variables := range mapTree {
-					if subsection == "" {
-						s += fmt.Sprintf("[%s]\n", iniFieldName)
-					} else {
-						s += fmt.Sprintf("[%s \"%s\"]\n", iniFieldName, subsection)
-					}
+					s += iniSectionLine(iniFieldName, subsection)
 					for variable, value := range variables {
-						s += fmt.Sprintf("%s=%s\n", variable, value)
+						s += iniVariableLine(variable, value)
 					}
 					s += "\n"
 				}
 			} else if fieldStruct.Type.Elem().Kind() == reflect.Ptr && fieldStruct.Type.Elem().Elem().Kind() == reflect.Struct {
 				iter := fieldValue.MapRange()
 				for iter.Next() {
-					res, err := stringifyStructFields(iter.Value().Elem())
+					iniVariableLines, err := stringifyStructFields(iter.Value().Elem())
 					if err != nil {
 						return "", err
 					}
 
-					if iter.Key().String() == "" {
-						s += fmt.Sprintf("[%s]\n", iniFieldName)
-					} else {
-						s += fmt.Sprintf("[%s \"%s\"]\n", iniFieldName, iter.Key())
-					}
-					s += res + "\n"
+					s += iniSectionLine(iniFieldName, iter.Key().String())
+					s += iniVariableLines
+					s += "\n"
 				}
 			} else {
 				return "", fmt.Errorf("The map values must either be of string or *struct type, instead they are of %s type", fieldStruct.Type.Elem().Kind())
@@ -123,15 +118,10 @@ func stringifyStructFields(value reflect.Value) (string, error) {
 
 			iter := fieldValue.MapRange()
 			for iter.Next() {
-				key := iter.Key()
-				value := iter.Value()
-				if value.Kind() == reflect.String {
-					s += fmt.Sprintf("%s=%s\n", key, value)
-				} else {
-					for j := 0; j < value.Len(); j++ {
-						s += fmt.Sprintf("%s=%s\n", key, value.Index(j))
-					}
-				}
+				iterateMaybeSlice(iter.Value(), func(innerValue reflect.Value) error {
+					s += iniVariableLine(iter.Key().String(), innerValue.String())
+					return nil
+				})
 			}
 		} else {
 			if err := iterateMaybeSlice(fieldValue, func(innerValue reflect.Value) error {
@@ -139,7 +129,7 @@ func stringifyStructFields(value reflect.Value) (string, error) {
 				if err != nil {
 					return err
 				}
-				s += fmt.Sprintf("%s=%s\n", iniKey(fieldStruct), res)
+				s += iniVariableLine(iniKey(fieldStruct), res)
 				return nil
 			}); err != nil {
 				return "", err
@@ -150,7 +140,18 @@ func stringifyStructFields(value reflect.Value) (string, error) {
 	return s, nil
 }
 
-// This function implements the inversion of `fieldFold`.
+func iniSectionLine(section, subsection string) string {
+	if subsection == "" {
+		return fmt.Sprintf("[%s]\n", section)
+	}
+	return fmt.Sprintf("[%s \"%s\"]\n", section, subsection)
+}
+
+func iniVariableLine(variable, value string) string {
+	return fmt.Sprintf("%s=%s\n", variable, value)
+}
+
+// This function implements the inversion of `fieldFold` in `set.go`. The order of operations must be maintained.
 func iniKey(fieldStruct reflect.StructField) string {
 	tag := newTag(fieldStruct.Tag.Get("gcfg"))
 	if tag.ident != "" {
@@ -169,7 +170,7 @@ func iniKey(fieldStruct reflect.StructField) string {
 	return strings.ToLower(strings.Replace(name, "_", "-", -1))
 }
 
-// This function implements the inversion of `setters`.
+// This function implements the inversion of `setters` in `set.go`. The order of operations must be maintained.
 func iniValue(value reflect.Value) (string, error) {
 	if bigIntValue, ok := value.Interface().(big.Int); ok {
 		return bigIntValue.String(), nil

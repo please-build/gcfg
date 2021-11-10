@@ -17,6 +17,8 @@ type subtypeStruct1 struct {
 	Bar_Foo *big.Int
 	Baz_Baz []string
 	F_Bar   map[string]string `gcfg:"extra_values"`
+	Xǂbar   string
+	Xfoo    string
 	// Private field is here to make sure they aren't picked up.
 	private bool
 }
@@ -66,6 +68,8 @@ bar-foo=10
 baz-baz=value3
 baz-baz=value4
 bar-key=bar-value
+ǂbar=
+xfoo=
 
 `
 
@@ -110,6 +114,8 @@ bar-foo=10
 baz-baz=value3
 baz-baz=value4
 bar-key=bar-value
+ǂbar=
+xfoo=
 
 `
 
