@@ -2,7 +2,7 @@ version: '{branch}.{build}'
 branches:
   only:
   - v1
-clone_folder: c:\gopath\src\gopkg.in\gcfg.v1
+clone_folder: c:\gopath\src\gopkg.in\please-build\gcfg.v1
 environment:
   GOPATH: c:\gopath
 install:
