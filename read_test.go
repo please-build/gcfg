@@ -131,6 +131,8 @@ var readtests = []struct {
 	tests []readtest
 }{{"scanning", []readtest{
 	{"[section]\nname=value", &cBasic{Section: cBasicS1{Name: "value"}}, true},
+	// hash sign in value
+	{"[section]\nname=\"val#ue\"", &cBasic{Section: cBasicS1{Name: "val#ue"}}, true},
 	// hyphen in name
 	{"[hyphen-in-section]\nhyphen-in-name=value", &cBasic{Hyphen_In_Section: cBasicS2{Hyphen_In_Name: "value"}}, true},
 	// quoted string value
@@ -486,7 +488,7 @@ func TestStringStringMapSection(t *testing.T) {
 
 func TestFatalOnly(t *testing.T) {
 	var s = struct {
-		Foo struct{
+		Foo struct {
 			Bar string
 		}
 	}{}
