@@ -3,12 +3,11 @@ package gcfg
 import (
 	"fmt"
 	"reflect"
-	"strings"
 )
 
 // Get retrieves the values of a config field.
-func Get(config interface{}, field string) ([]string, error) {
-	section, subsection, name, err := ParseFieldName(field)
+func Get(config interface{}, section, subsection, name string) ([]string, error) {
+	field, err := parseField(section, subsection, name)
 	if err != nil {
 		return nil, err
 	}
@@ -105,13 +104,14 @@ func getExtraData(sectionValue reflect.Value, key, field string) (reflect.Value,
 	return reflect.Value{}, fmt.Errorf("Invalid unsettable field: %s", field)
 }
 
-func ParseFieldName(field string) (section, subsection, name string, err error) {
-	parts := strings.Split(field, ".")
-	if len(parts) < 2 || len(parts) > 3 {
-		return "", "", "", fmt.Errorf("Bad field format. Example: section.subsection.name or section.name")
+func parseField(section, subsection, name string) (string, error) {
+	if section == "" || name == "" {
+		return "", fmt.Errorf("Both section and name must be non-empty")
 	}
-	if len(parts) == 2 {
-		return parts[0], "", parts[1], nil
+
+	field := section
+	if subsection != "" {
+		field += "." + subsection
 	}
-	return parts[0], parts[1], parts[2], nil
+	return field + "." + name, nil
 }

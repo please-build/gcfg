@@ -10,10 +10,10 @@ import (
 func TestGetInvalidFields(t *testing.T) {
 	config := &struct{}{}
 
-	_, err := Get(config, "foo")
+	_, err := Get(config, "foo", "", "")
 	assert.Error(t, err)
 
-	_, err = Get(config, "foo.bar.baz")
+	_, err = Get(config, "foo", "bar", "baz")
 	assert.Error(t, err)
 }
 
@@ -33,51 +33,51 @@ func TestGet1(t *testing.T) {
 	}
 
 	// Valid
-	res, err := Get(config, "foo.bar")
+	res, err := Get(config, "foo", "", "bar")
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"value1"}, res)
 
-	res, err = Get(config, "foo.baz")
+	res, err = Get(config, "foo", "", "baz")
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"value2"}, res)
 
-	res, err = Get(config, "foo.f--bar")
+	res, err = Get(config, "foo", "", "f--bar")
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"true"}, res)
 
-	res, err = Get(config, "foo.bfoo")
+	res, err = Get(config, "foo", "", "bfoo")
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"false"}, res)
 
-	res, err = Get(config, "foo.bazbar")
+	res, err = Get(config, "foo", "", "bazbar")
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"0"}, res)
 
-	res, err = Get(config, "foo.foobaz")
+	res, err = Get(config, "foo", "", "foobaz")
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"-5"}, res)
 
-	res, err = Get(config, "foo.baz-baz")
+	res, err = Get(config, "foo", "", "baz-baz")
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"value3", "value4"}, res)
 
-	res, err = Get(config, "foo.bar-key")
+	res, err = Get(config, "foo", "", "bar-key")
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"bar-value"}, res)
 
-	res, err = Get(config, "foo.ǂbar")
+	res, err = Get(config, "foo", "", "ǂbar")
 	assert.NoError(t, err)
 	assert.Equal(t, []string{""}, res)
 
-	res, err = Get(config, "foo.xfoo")
+	res, err = Get(config, "foo", "", "xfoo")
 	assert.NoError(t, err)
 	assert.Equal(t, []string{""}, res)
 
 	// Invalid
-	_, err = Get(config, "nosection.foo")
+	_, err = Get(config, "nosection", "", "foo")
 	assert.Error(t, err)
 
-	_, err = Get(config, "foo.novar")
+	_, err = Get(config, "foo", "", "novar")
 	assert.Error(t, err)
 }
 
@@ -99,51 +99,51 @@ func TestGet2(t *testing.T) {
 	}
 
 	// Valid
-	res, err := Get(config, "foo.sub.bar")
+	res, err := Get(config, "foo", "sub", "bar")
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"value1"}, res)
 
-	res, err = Get(config, "foo.sub.baz")
+	res, err = Get(config, "foo", "sub", "baz")
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"value2"}, res)
 
-	res, err = Get(config, "foo.sub.f--bar")
+	res, err = Get(config, "foo", "sub", "f--bar")
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"true"}, res)
 
-	res, err = Get(config, "foo.sub.bfoo")
+	res, err = Get(config, "foo", "sub", "bfoo")
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"false"}, res)
 
-	res, err = Get(config, "foo.sub.bazbar")
+	res, err = Get(config, "foo", "sub", "bazbar")
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"0"}, res)
 
-	res, err = Get(config, "foo.sub.foobaz")
+	res, err = Get(config, "foo", "sub", "foobaz")
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"-5"}, res)
 
-	res, err = Get(config, "foo.sub.baz-baz")
+	res, err = Get(config, "foo", "sub", "baz-baz")
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"value3", "value4"}, res)
 
-	res, err = Get(config, "foo.sub.bar-key")
+	res, err = Get(config, "foo", "sub", "bar-key")
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"bar-value"}, res)
 
-	res, err = Get(config, "foo.sub.ǂbar")
+	res, err = Get(config, "foo", "sub", "ǂbar")
 	assert.NoError(t, err)
 	assert.Equal(t, []string{""}, res)
 
-	res, err = Get(config, "foo.sub.xfoo")
+	res, err = Get(config, "foo", "sub", "xfoo")
 	assert.NoError(t, err)
 	assert.Equal(t, []string{""}, res)
 
 	// Invalid
-	_, err = Get(config, "foo.nosub.novar")
+	_, err = Get(config, "foo", "nosub", "novar")
 	assert.Error(t, err)
 
-	_, err = Get(config, "foo.sub.nonexisting")
+	_, err = Get(config, "foo", "sub", "nonexisting")
 	assert.Error(t, err)
 }
 
@@ -154,7 +154,7 @@ func TestGet3(t *testing.T) {
 		Foo: map[string]string{"key": "value"},
 	}
 
-	res, err := Get(config, "foo.key")
+	res, err := Get(config, "foo", "", "key")
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"value"}, res)
 }
@@ -166,7 +166,7 @@ func TestGet4(t *testing.T) {
 		Foo: map[string]string{"sub key": "value"},
 	}
 
-	res, err := Get(config, "foo.sub.key")
+	res, err := Get(config, "foo", "sub", "key")
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"value"}, res)
 }
@@ -181,7 +181,7 @@ func TestGet5(t *testing.T) {
 		},
 	}
 
-	res, err := Get(config, "baz.key1")
+	res, err := Get(config, "baz", "", "key1")
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"value2", "value3"}, res)
 }
