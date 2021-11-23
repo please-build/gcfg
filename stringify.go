@@ -23,7 +23,7 @@ func Stringify(config interface{}) (string, error) {
 	for i := 0; i < configValue.NumField(); i++ {
 		fieldValue := configValue.Field(i)
 		fieldStruct := configValue.Type().Field(i)
-		if !fieldStruct.IsExported() {
+		if !fieldValue.CanInterface() {
 			continue
 		}
 
@@ -44,33 +44,7 @@ func Stringify(config interface{}) (string, error) {
 			}
 
 			if fieldStruct.Type.Elem().Kind() == reflect.String {
-				// We encode subsections and variables using the `subsection variable` format
-				// in map keys, if we define subsections on the ini file where the underlying
-				// type is map[string]string. We need to decode this from the config object
-				// to convert it back to the ini format.
-				mapTree := make(map[string]map[string]string)
-				iter := fieldValue.MapRange()
-				for iter.Next() {
-					parts := strings.Split(iter.Key().String(), " ")
-					if len(parts) > 2 {
-						panic("Invalid map key value")
-					}
-
-					var subsection string
-					var variable string
-					if len(parts) == 1 {
-						variable = parts[0]
-					} else {
-						subsection = parts[0]
-						variable = parts[1]
-					}
-					if _, exists := mapTree[subsection]; !exists {
-						mapTree[subsection] = make(map[string]string)
-					}
-					mapTree[subsection][variable] = iter.Value().String()
-				}
-
-				for subsection, variables := range mapTree {
+				for subsection, variables := range decodeStringMap(fieldValue) {
 					s += iniSectionLine(iniFieldName, subsection)
 					for variable, value := range variables {
 						s += iniVariableLine(variable, value)
@@ -107,7 +81,7 @@ func stringifyStructFields(value reflect.Value) (string, error) {
 	for i := 0; i < value.NumField(); i++ {
 		fieldValue := value.Field(i)
 		fieldStruct := value.Type().Field(i)
-		if !fieldStruct.IsExported() {
+		if !fieldValue.CanInterface() {
 			continue
 		}
 
@@ -148,7 +122,7 @@ func iniSectionLine(section, subsection string) string {
 }
 
 func iniVariableLine(variable, value string) string {
-	return fmt.Sprintf("%s=%s\n", variable, value)
+	return fmt.Sprintf("%s = %s\n", variable, value)
 }
 
 // This function implements the inversion of `fieldFold` in `set.go`. The order of operations must be maintained.
@@ -203,6 +177,38 @@ func iniValue(value reflect.Value) (string, error) {
 	}
 
 	return "", fmt.Errorf("Unable to stringify value: %+v", value.Interface())
+}
+
+// We encode subsections and variables using the `subsection variable` format
+// in map keys, if we define subsections on the ini file where the underlying
+// type is map[string]string.
+func decodeStringMap(value reflect.Value) map[string]map[string]string {
+	if value.Kind() != reflect.Map || value.Type().Key().Kind() != reflect.String || value.Type().Elem().Kind() != reflect.String {
+		panic(fmt.Sprintf("Value must be of map[string]string type, instead is was: %s", value.Type()))
+	}
+
+	mapTree := make(map[string]map[string]string)
+	iter := value.MapRange()
+	for iter.Next() {
+		parts := strings.Split(iter.Key().String(), " ")
+		if len(parts) > 2 {
+			panic("Invalid map key value")
+		}
+
+		var subsection string
+		var variable string
+		if len(parts) == 1 {
+			variable = parts[0]
+		} else {
+			subsection = parts[0]
+			variable = parts[1]
+		}
+		if _, exists := mapTree[subsection]; !exists {
+			mapTree[subsection] = make(map[string]string)
+		}
+		mapTree[subsection][variable] = iter.Value().String()
+	}
+	return mapTree
 }
 
 func iterateMaybeSlice(value reflect.Value, callback func(reflect.Value) error) error {

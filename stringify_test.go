@@ -58,18 +58,18 @@ func TestStringify1(t *testing.T) {
 		},
 	}
 	expectedResult := `[foo]
-bar=value1
-baz=value2
-f--bar=true
-bfoo=false
-bazbar=0
-foobaz=-5
-bar-foo=10
-baz-baz=value3
-baz-baz=value4
-bar-key=bar-value
-ǂbar=
-xfoo=
+bar = value1
+baz = value2
+f--bar = true
+bfoo = false
+bazbar = 0
+foobaz = -5
+bar-foo = 10
+baz-baz = value3
+baz-baz = value4
+bar-key = bar-value
+ǂbar = 
+xfoo = 
 
 `
 
@@ -104,18 +104,18 @@ func TestStringify3(t *testing.T) {
 		},
 	}
 	expectedResult := `[foo "sub"]
-bar=value1
-baz=value2
-f--bar=true
-bfoo=false
-bazbar=0
-foobaz=-5
-bar-foo=10
-baz-baz=value3
-baz-baz=value4
-bar-key=bar-value
-ǂbar=
-xfoo=
+bar = value1
+baz = value2
+f--bar = true
+bfoo = false
+bazbar = 0
+foobaz = -5
+bar-foo = 10
+baz-baz = value3
+baz-baz = value4
+bar-key = bar-value
+ǂbar = 
+xfoo = 
 
 `
 
@@ -131,7 +131,7 @@ func TestStringify4(t *testing.T) {
 		Foo: map[string]string{"key": "value"},
 	}
 	expectedResult := `[foo]
-key=value
+key = value
 
 `
 
@@ -147,7 +147,7 @@ func TestStringify5(t *testing.T) {
 		Foo: map[string]string{"sub key": "value"},
 	}
 	expectedResult := `[foo "sub"]
-key=value
+key = value
 
 `
 
@@ -167,11 +167,11 @@ func TestStringify6(t *testing.T) {
 		},
 	}
 	expectedResult := `[bar]
-value=value1
+value = value1
 
 [baz]
-key1=value2
-key1=value3
+key1 = value2
+key1 = value3
 
 `
 

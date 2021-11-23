@@ -289,9 +289,7 @@ func set(c *warnings.Collector, cfg interface{}, sect, sub, name string,
 	}
 	// vVal is either single-valued var, or newly allocated value within multi-valued var
 	var vVal reflect.Value
-	// multi-value if unnamed slice type
-	isMulti := vVar.Type().Name() == "" && vVar.Kind() == reflect.Slice ||
-		vVar.Type().Name() == "" && vVar.Kind() == reflect.Ptr && vVar.Type().Elem().Name() == "" && vVar.Type().Elem().Kind() == reflect.Slice
+	isMulti := isMultiVal(vVar)
 	if isMulti && vVar.Kind() == reflect.Ptr {
 		if vVar.IsNil() {
 			vVar.Set(reflect.New(vVar.Type().Elem()))
@@ -342,6 +340,12 @@ func set(c *warnings.Collector, cfg interface{}, sect, sub, name string,
 		vVar.Set(reflect.Append(vVar, vVal))
 	}
 	return nil
+}
+
+// It is a multi-value if unnamed slice type
+func isMultiVal(v reflect.Value) bool {
+	return v.Type().Name() == "" && v.Kind() == reflect.Slice ||
+		v.Type().Name() == "" && v.Kind() == reflect.Ptr && v.Type().Elem().Name() == "" && v.Type().Elem().Kind() == reflect.Slice
 }
 
 func setExtraDataInSection(vSect reflect.Value, key, value string, loc loc) (bool, error) {
