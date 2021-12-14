@@ -40,6 +40,8 @@ func readIntoStruct(in *os.File) *ast.File {
 				}
 			}
 			f.Lines += 1
+		} else {
+			f.Lines += 1
 		}
 	}
 
