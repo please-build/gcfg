@@ -1,5 +1,7 @@
 package ast
 
+import "strings"
+
 // A lineInfo object describes alternative file and line number
 // information (such as provided via a //line comment in a .go
 // file) for a given file offset.
@@ -15,24 +17,31 @@ type lineInfo struct {
 //
 type File struct {
 	// set  *FileSet
-	name string // file name as provided to AddFile
-	base int    // Pos value range for this file is [base...base+size]
-	size int    // file size as provided to AddFile
+	Name string // file name as provided to AddFile
+	Base int    // Pos value range for this file is [base...base+size]
+	Size int    // file size as provided to AddFile
 
 	// lines and infos are protected by set.mutex
-	lines       []int
-	infos       []lineInfo
-	numSections int
-	sections    []Section
+	Lines       []int
+	Infos       []lineInfo
+	NumSections int
+	Sections    []Section
 }
 
 type Section struct {
-	title             string
-	fields            []Field
-	leadingWhiteSpace int
+	Title             string
+	Fields            []Field
+	LeadingWhiteSpace int
 }
 
 type Field struct {
 	key   string
 	value string
+}
+
+func MakeSection(s string) Section {
+	// Strip brackets
+	stripped := strings.Replace(s, "[", "", -1)
+	stripped = strings.Replace(stripped, "]", "", -1)
+	return Section{Title: stripped}
 }

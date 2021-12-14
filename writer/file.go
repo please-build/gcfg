@@ -2,9 +2,10 @@ package writer
 
 import (
 	"bufio"
-	"go/ast"
 	"log"
 	"os"
+
+	"github.com/please-build/gcfg/ast"
 )
 
 // Read file into a file struct
@@ -15,14 +16,14 @@ func readIntoStruct(in string) *ast.File {
 	}
 	defer file.Close()
 
-	var myfile File
-	myfile.name = in
+	var myfile ast.File
+	myfile.Name = in
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		if scanner.Text()[0] == '[' {
-			myfile.sections = append(myfile.sections, scanner.Text())
-			myfile.numSections += 1
+			myfile.Sections = append(myfile.Sections, ast.MakeSection(scanner.Text()))
+			myfile.NumSections += 1
 		}
 	}
 
