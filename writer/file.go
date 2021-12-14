@@ -10,33 +10,38 @@ import (
 )
 
 // Read file into a file struct
-func readIntoStruct(in string) *ast.File {
-	file, err := os.Open(in)
+func readIntoStruct(in *os.File) *ast.File {
+	var f ast.File
+	f.Name = in.Name()
+
+	ioreader, err := os.Open(f.Name)
 	if err != nil {
-		log.Fatalf("Couldn't open file")
+		log.Fatal(err)
 	}
-	defer file.Close()
+	scanner := bufio.NewScanner(ioreader)
 
-	var myfile ast.File
-	myfile.Name = in
-
-	scanner := bufio.NewScanner(file)
+	//TODO: Check for duplicate sections with a map, and collapse if found...?
 
 	currentSection := ""
 	for scanner.Scan() {
 		line := scanner.Text()
 		if line == "" {
-			myfile.Lines += 1
+			f.Lines += 1
 		} else if line[0] == '[' && line[len(line)-1] == ']' {
-			myfile.Sections = append(myfile.Sections, ast.MakeSection(line, myfile.Lines))
-			currentSection = myfile.Sections[len(myfile.Sections)-1].Title
-			myfile.NumSections += 1
-			myfile.Lines += 1
+			f.Sections = append(f.Sections, ast.MakeSection(line, f.Lines))
+			currentSection = f.Sections[len(f.Sections)-1].Title
+			f.NumSections += 1
+			f.Lines += 1
 		} else if strings.Contains(line, "=") {
 			// This is a field, so append this to the current section
-			myfile.Lines += 1
+			for _, i := range f.Sections {
+				if i.Title == currentSection {
+					i.Fields = append(i.Fields, ast.MakeField(line))
+				}
+			}
+			f.Lines += 1
 		}
 	}
 
-	return &myfile
+	return &f
 }

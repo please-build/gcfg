@@ -1,6 +1,9 @@
 package ast
 
-import "strings"
+import (
+	"log"
+	"strings"
+)
 
 // A lineInfo object describes alternative file and line number
 // information (such as provided via a //line comment in a .go
@@ -44,8 +47,24 @@ func MakeSection(s string, line int) Section {
 	// Strip brackets
 	stripped := strings.Replace(s, "[", "", -1)
 	stripped = strings.Replace(stripped, "]", "", -1)
+
+	// Canonicalise title
+	stripped = strings.ToLower(stripped)
+
 	return Section{
 		Title: stripped,
 		Line:  line,
 	}
+}
+
+func MakeField(s string) Field {
+	split := strings.Split(s, "=")
+	if len(split) != 2 {
+		log.Fatalf("Got invalid field \"%v\"", s)
+	}
+	f := Field{
+		key:   split[0],
+		value: split[1],
+	}
+	return f
 }
