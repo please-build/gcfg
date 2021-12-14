@@ -22,7 +22,7 @@ type File struct {
 	Size int    // file size as provided to AddFile
 
 	// lines and infos are protected by set.mutex
-	Lines       []int
+	Lines       int
 	Infos       []lineInfo
 	NumSections int
 	Sections    []Section
@@ -30,6 +30,7 @@ type File struct {
 
 type Section struct {
 	Title             string
+	Line              int
 	Fields            []Field
 	LeadingWhiteSpace int
 }
@@ -39,9 +40,12 @@ type Field struct {
 	value string
 }
 
-func MakeSection(s string) Section {
+func MakeSection(s string, line int) Section {
 	// Strip brackets
 	stripped := strings.Replace(s, "[", "", -1)
 	stripped = strings.Replace(stripped, "]", "", -1)
-	return Section{Title: stripped}
+	return Section{
+		Title: stripped,
+		Line:  line,
+	}
 }
