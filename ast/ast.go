@@ -34,6 +34,7 @@ type File struct {
 
 type Section struct {
 	Title             string
+	Key               string
 	Line              int
 	Fields            []Field
 	LeadingWhiteSpace int
@@ -73,4 +74,21 @@ func getSectionTitleFromString(s string) string {
 	stripped = strings.Replace(stripped, "]", "", -1)
 	stripped = strings.ToLower(stripped)
 	return stripped
+}
+
+func (s Section) ToBytes() []byte {
+	if s.Key == "" {
+		log.Fatalf("Tried to convert an empty section to byte slice")
+	}
+
+	return []byte(s.Title)
+}
+
+func (f Field) ToBytes() []byte {
+	if f.Key == "" || f.Value == "" {
+		log.Fatalf("Key or value missing for field: %v", f)
+	}
+
+	s := f.Key + "=" + f.Value
+	return []byte(s)
 }

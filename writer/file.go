@@ -31,14 +31,14 @@ func readIntoStruct(file *os.File) *ast.File {
 		} else if line[0] == '[' && line[len(line)-1] == ']' {
 			f.Sections = append(f.Sections, ast.MakeSection(line, f.Lines))
 			// f.Sections[ast.GetSectionTitleFromString(line)] = ast.MakeSection(line, f.Lines)
-			currentSection = f.Sections[len(f.Sections)-1].Title
+			currentSection = f.Sections[len(f.Sections)-1].Key
 			f.NumSections += 1
 			f.Lines += 1
 		} else if strings.Contains(line, "=") {
 			// This is a field, so append this to the current section
-			for _, i := range f.Sections {
-				if i.Title == currentSection {
-					i.Fields = append(i.Fields, ast.MakeField(line))
+			for _, s := range f.Sections {
+				if s.Key == currentSection {
+					s.Fields = append(s.Fields, ast.MakeField(line))
 				}
 			}
 			f.Lines += 1
@@ -75,11 +75,22 @@ func injectField(f *ast.File, field ast.Field, section string) *ast.File {
 	return f
 }
 
-func writeASTToFile(f *ast.File, output string) *os.File {
+func convertASTToBytes(f *ast.File) []byte {
 	// Turn AST into a list of bytes
+	var data []byte
 	for _, section := range f.Sections {
+		data = append(data, section.ToBytes()...)
 		for _, field := range section.Fields {
-
+			data = append(data, field.ToBytes()...)
 		}
+	}
+
+	return data
+}
+
+func writeBytesToFile(data []byte, output string) {
+	err := os.WriteFile(output, data, 0644)
+	if err != nil {
+		log.Fatalf("Failed to write bytes to file: %v", err)
 	}
 }

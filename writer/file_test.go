@@ -126,8 +126,8 @@ Malus domestica = apple
 
 	file := readIntoStruct(f)
 	field := ast.Field{
-		Key:   "andahappy",
-		Value: "newyear",
+		Key:   "newyear",
+		Value: "happy",
 	}
 	injectField(file, field, "rosaceae")
 
@@ -135,8 +135,11 @@ Malus domestica = apple
 		t.Errorf("Expected 2 sections in config. Got %v", file.NumSections)
 	} else if !(file.Sections[0].Title == "hallmark" && file.Sections[1].Title == "rosaceae") {
 		t.Errorf("Expected sections \"hallmark\" and \"rosaceae\". Got \"%v\" and \"%v\"", file.Sections[0].Title, file.Sections[1].Title)
+	} else if len(file.Sections[1].Fields) != 2 {
+		t.Errorf("Expected section Rosaceae to have 2 fields. Got %v", len(file.Sections[1].Fields))
+	} else if file.Sections[1].Fields[1].Key != field.Key {
+		t.Errorf("Expected injected field to have key %v. Got %v", field.Key, file.Sections[1].Fields[1].Key)
+	} else if file.Sections[1].Fields[1].Value != field.Value {
+		t.Errorf("Expected injected field to have value %v. Got %v", field.Value, file.Sections[1].Fields[1].Value)
 	}
-	// 	expectedResult := `[hallmark]
-	// christmas = newyear
-	// `
 }
