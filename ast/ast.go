@@ -28,7 +28,8 @@ type File struct {
 	Lines       int
 	Infos       []lineInfo
 	NumSections int
-	Sections    []Section
+	// Sections    map[string]Section
+	Sections []Section
 }
 
 type Section struct {
@@ -39,8 +40,8 @@ type Section struct {
 }
 
 type Field struct {
-	key   string
-	value string
+	Key   string
+	Value string
 }
 
 func MakeSection(s string, line int) Section {
@@ -63,8 +64,8 @@ func MakeField(s string) Field {
 		log.Fatalf("Got invalid field \"%v\"", s)
 	}
 	f := Field{
-		key:   split[0],
-		value: split[1],
+		Key:   split[0],
+		Value: split[1],
 	}
 	return f
 }

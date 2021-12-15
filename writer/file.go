@@ -10,9 +10,9 @@ import (
 )
 
 // Read file into a file struct
-func readIntoStruct(in *os.File) *ast.File {
+func readIntoStruct(file *os.File) *ast.File {
 	var f ast.File
-	f.Name = in.Name()
+	f.Name = file.Name()
 
 	ioreader, err := os.Open(f.Name)
 	if err != nil {
@@ -20,7 +20,7 @@ func readIntoStruct(in *os.File) *ast.File {
 	}
 	scanner := bufio.NewScanner(ioreader)
 
-	//TODO: Check for duplicate sections with a map, and collapse if found...?
+	//TODO: Check for duplicate sections and collapse/warn if found?
 
 	currentSection := ""
 	for scanner.Scan() {
@@ -46,4 +46,26 @@ func readIntoStruct(in *os.File) *ast.File {
 	}
 
 	return &f
+}
+
+func injectField(file *os.File, field ast.Field, section string) *ast.File {
+	// Read the file so we know where to inject
+	f := readIntoStruct(file)
+	section = strings.ToLower(section)
+
+	// Does the section exist?
+	exists := false
+	var sectionInFile ast.Section
+	for _, s := range f.Sections {
+		if s.Title == section {
+			exists = true
+			sectionInFile = s
+		}
+	}
+
+	if exists {
+
+	} else {
+	}
+	return f
 }

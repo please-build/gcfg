@@ -108,3 +108,26 @@ bar = value1
 	}
 
 }
+
+func TestInjectFieldIntoFile(t *testing.T) {
+	config := `[section]
+merry = christmas
+`
+	f, err := os.CreateTemp("", "test")
+	if err != nil {
+		log.Fatal(err)
+	}
+	if _, err := f.Write([]byte(config)); err != nil {
+		log.Fatal(err)
+	}
+
+	field := ast.Field{
+		Key:   "andahappy",
+		Value: "newyear",
+	}
+	injectField(f, field, "section")
+
+	expectedResult := `[section]
+andahappy = newyear
+`
+}
