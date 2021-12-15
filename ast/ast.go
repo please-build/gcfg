@@ -5,16 +5,6 @@ import (
 	"strings"
 )
 
-// A lineInfo object describes alternative file and line number
-// information (such as provided via a //line comment in a .go
-// file) for a given file offset.
-type lineInfo struct {
-	// fields are exported to make them accessible to gob
-	Offset   int
-	Filename string
-	Line     int
-}
-
 // A File is a handle for a file belonging to a FileSet.
 // A File has a name, size, and line offset table.
 //
@@ -26,7 +16,6 @@ type File struct {
 
 	// lines and infos are protected by set.mutex
 	Lines       int
-	Infos       []lineInfo
 	NumSections int
 	// Sections    map[string]Section
 	Sections []Section
@@ -58,11 +47,10 @@ func MakeField(s string) Field {
 	if len(split) != 2 {
 		log.Fatalf("Got invalid field \"%v\"", s)
 	}
-	f := Field{
+	return Field{
 		Key:   split[0],
 		Value: split[1],
 	}
-	return f
 }
 
 func getSectionKeyFromString(s string) string {

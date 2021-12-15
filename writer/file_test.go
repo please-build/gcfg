@@ -1,6 +1,7 @@
 package writer
 
 import (
+	"bytes"
 	"log"
 	"os"
 	"strings"
@@ -132,7 +133,9 @@ Malus domestica = Orchard apple
 	}
 	file = injectField(file, field, "rosaceae")
 
-	if file.NumSections != 2 {
+	if file.Lines != 6 {
+		t.Errorf("Expected read file to have 7 lines. Got %v", file.Lines)
+	} else if file.NumSections != 2 {
 		t.Errorf("Expected 2 sections in config. Got %v", file.NumSections)
 	} else if !(file.Sections[0].Key == "hallmark" && file.Sections[1].Key == "rosaceae") {
 		t.Errorf("Expected sections \"hallmark\" and \"rosaceae\". Got \"%v\" and \"%v\"", file.Sections[0].Key, file.Sections[1].Key)
@@ -144,5 +147,31 @@ Malus domestica = Orchard apple
 		t.Errorf("Expected injected field to have key %v. Got %v", field.Key, file.Sections[1].Fields[1].Key)
 	} else if file.Sections[1].Fields[1].Value != field.Value {
 		t.Errorf("Expected injected field to have value %v. Got %v", field.Value, file.Sections[1].Fields[1].Value)
+	}
+}
+
+func TestWriteASTToFile(t *testing.T) {
+	config := `[hallMaRk]
+christmas = merry
+newyear = happy
+
+[Rosaceae]
+Malus domestica = Orchard apple
+`
+	f, err := os.CreateTemp("", "test")
+	if err != nil {
+		log.Fatal(err)
+	}
+	if _, err := f.Write([]byte(config)); err != nil {
+		log.Fatal(err)
+	}
+
+	file := readIntoStruct(f)
+
+	// Convert to bytes
+	data := convertASTToBytes(file)
+
+	if bytes.Compare([]byte(config), data) != 0 {
+		t.Errorf("config and data not the same. config=\n%v\ndata=\n%v", config, data)
 	}
 }

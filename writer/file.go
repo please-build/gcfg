@@ -33,15 +33,16 @@ func readIntoStruct(file *os.File) ast.File {
 			f.Sections = append(f.Sections, ast.MakeSection(line, f.Lines))
 			// f.Sections[ast.GetSectionTitleFromString(line)] = ast.MakeSection(line, f.Lines)
 			currentSection = f.Sections[len(f.Sections)-1].Key
-			log.Printf("currentSection = %v", currentSection)
+			log.Printf("currentSection = \"%v\"", currentSection)
 			f.NumSections += 1
 			f.Lines += 1
 		} else if strings.Contains(line, "=") {
 			// This is a field, so append this to the current section
+			log.Printf("Found field %v", line)
 			for _, s := range f.Sections {
 				if s.Key == currentSection {
 					s.Fields = append(s.Fields, ast.MakeField(line))
-					log.Printf("appending field %v to section %v", line, currentSection)
+					log.Printf("appending field \"%v\" to section \"%v\"", line, s)
 					log.Printf("so now section %v has %v fields", s.Key, len(s.Fields))
 				}
 			}
@@ -81,7 +82,7 @@ func injectField(f ast.File, field ast.Field, section string) ast.File {
 	return f
 }
 
-func convertASTToBytes(f *ast.File) []byte {
+func convertASTToBytes(f ast.File) []byte {
 	// Turn AST into a list of bytes
 	var data []byte
 	for _, section := range f.Sections {
