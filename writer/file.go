@@ -2,6 +2,7 @@ package writer
 
 import (
 	"bufio"
+	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -53,6 +54,9 @@ func injectField(file *os.File, field ast.Field, section string) *ast.File {
 	f := readIntoStruct(file)
 	section = strings.ToLower(section)
 
+	// Increment total lines in file
+	f.Lines += 1
+
 	// Does the section exist?
 	exists := false
 	var sectionInFile ast.Section
@@ -64,7 +68,7 @@ func injectField(file *os.File, field ast.Field, section string) *ast.File {
 	}
 
 	if exists {
-
+		fmt.Printf("sectionInFile = %v", sectionInFile)
 	} else {
 	}
 	return f

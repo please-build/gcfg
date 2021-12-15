@@ -110,8 +110,11 @@ bar = value1
 }
 
 func TestInjectFieldIntoFile(t *testing.T) {
-	config := `[section]
-merry = christmas
+	config := `[hallmark]
+christmas = merry
+
+[Rosaceae]
+Malus domestica = apple
 `
 	f, err := os.CreateTemp("", "test")
 	if err != nil {
@@ -125,9 +128,9 @@ merry = christmas
 		Key:   "andahappy",
 		Value: "newyear",
 	}
-	injectField(f, field, "section")
+	injectField(f, field, "rosaceae")
 
-	expectedResult := `[section]
-andahappy = newyear
-`
+	// 	expectedResult := `[section]
+	// andahappy = newyear
+	// `
 }
