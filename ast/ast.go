@@ -45,15 +45,8 @@ type Field struct {
 }
 
 func MakeSection(s string, line int) Section {
-	// Strip brackets
-	stripped := strings.Replace(s, "[", "", -1)
-	stripped = strings.Replace(stripped, "]", "", -1)
-
-	// Canonicalise title
-	stripped = strings.ToLower(stripped)
-
 	return Section{
-		Title: stripped,
+		Title: getSectionTitleFromString(s),
 		Line:  line,
 	}
 }
@@ -68,4 +61,16 @@ func MakeField(s string) Field {
 		Value: split[1],
 	}
 	return f
+}
+
+func getSectionTitleFromString(s string) string {
+	n := strings.Count(s, "[")
+	n += strings.Count(s, "]")
+	if n != 2 {
+		log.Fatalf("Invalid section header: %v", s)
+	}
+	stripped := strings.Replace(s, "[", "", -1)
+	stripped = strings.Replace(stripped, "]", "", -1)
+	stripped = strings.ToLower(stripped)
+	return stripped
 }

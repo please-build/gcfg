@@ -109,7 +109,7 @@ bar = value1
 
 }
 
-func TestInjectFieldIntoFile(t *testing.T) {
+func TestInjectFieldIntoAST(t *testing.T) {
 	config := `[hallmark]
 christmas = merry
 
@@ -124,13 +124,19 @@ Malus domestica = apple
 		log.Fatal(err)
 	}
 
+	file := readIntoStruct(f)
 	field := ast.Field{
 		Key:   "andahappy",
 		Value: "newyear",
 	}
-	injectField(f, field, "rosaceae")
+	injectField(file, field, "rosaceae")
 
-	// 	expectedResult := `[section]
-	// andahappy = newyear
+	if file.NumSections != 2 {
+		t.Errorf("Expected 2 sections in config. Got %v", file.NumSections)
+	} else if !(file.Sections[0].Title == "hallmark" && file.Sections[1].Title == "rosaceae") {
+		t.Errorf("Expected sections \"hallmark\" and \"rosaceae\". Got \"%v\" and \"%v\"", file.Sections[0].Title, file.Sections[1].Title)
+	}
+	// 	expectedResult := `[hallmark]
+	// christmas = newyear
 	// `
 }

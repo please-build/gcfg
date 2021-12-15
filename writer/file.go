@@ -30,6 +30,7 @@ func readIntoStruct(file *os.File) *ast.File {
 			f.Lines += 1
 		} else if line[0] == '[' && line[len(line)-1] == ']' {
 			f.Sections = append(f.Sections, ast.MakeSection(line, f.Lines))
+			// f.Sections[ast.GetSectionTitleFromString(line)] = ast.MakeSection(line, f.Lines)
 			currentSection = f.Sections[len(f.Sections)-1].Title
 			f.NumSections += 1
 			f.Lines += 1
@@ -49,9 +50,8 @@ func readIntoStruct(file *os.File) *ast.File {
 	return &f
 }
 
-func injectField(file *os.File, field ast.Field, section string) *ast.File {
+func injectField(f *ast.File, field ast.Field, section string) *ast.File {
 	// Read the file so we know where to inject
-	f := readIntoStruct(file)
 	section = strings.ToLower(section)
 
 	// Increment total lines in file
@@ -59,17 +59,27 @@ func injectField(file *os.File, field ast.Field, section string) *ast.File {
 
 	// Does the section exist?
 	exists := false
-	var sectionInFile ast.Section
+	var astSection ast.Section
 	for _, s := range f.Sections {
 		if s.Title == section {
 			exists = true
-			sectionInFile = s
+			astSection = s
 		}
 	}
 
 	if exists {
-		fmt.Printf("sectionInFile = %v", sectionInFile)
-	} else {
+		fmt.Printf("astSection = %v", astSection)
+		astSection.Fields = append(astSection.Fields, field)
 	}
+
 	return f
+}
+
+func writeASTToFile(f *ast.File, output string) *os.File {
+	// Turn AST into a list of bytes
+	for _, section := range f.Sections {
+		for _, field := range section.Fields {
+
+		}
+	}
 }
