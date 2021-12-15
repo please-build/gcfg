@@ -11,7 +11,7 @@ import (
 )
 
 // Read file into a file struct
-func readIntoStruct(file *os.File) *ast.File {
+func readIntoStruct(file *os.File) ast.File {
 	var f ast.File
 	f.Name = file.Name()
 
@@ -25,6 +25,7 @@ func readIntoStruct(file *os.File) *ast.File {
 
 	currentSection := ""
 	for scanner.Scan() {
+		log.Printf("scanning line %v", f.Lines)
 		line := scanner.Text()
 		if line == "" {
 			f.Lines += 1
@@ -32,6 +33,7 @@ func readIntoStruct(file *os.File) *ast.File {
 			f.Sections = append(f.Sections, ast.MakeSection(line, f.Lines))
 			// f.Sections[ast.GetSectionTitleFromString(line)] = ast.MakeSection(line, f.Lines)
 			currentSection = f.Sections[len(f.Sections)-1].Key
+			log.Printf("currentSection = %v", currentSection)
 			f.NumSections += 1
 			f.Lines += 1
 		} else if strings.Contains(line, "=") {
@@ -39,6 +41,8 @@ func readIntoStruct(file *os.File) *ast.File {
 			for _, s := range f.Sections {
 				if s.Key == currentSection {
 					s.Fields = append(s.Fields, ast.MakeField(line))
+					log.Printf("appending field %v to section %v", line, currentSection)
+					log.Printf("so now section %v has %v fields", s.Key, len(s.Fields))
 				}
 			}
 			f.Lines += 1
@@ -47,10 +51,10 @@ func readIntoStruct(file *os.File) *ast.File {
 		}
 	}
 
-	return &f
+	return f
 }
 
-func injectField(f *ast.File, field ast.Field, section string) *ast.File {
+func injectField(f ast.File, field ast.Field, section string) ast.File {
 	// Read the file so we know where to inject
 	section = strings.ToLower(section)
 
@@ -70,6 +74,8 @@ func injectField(f *ast.File, field ast.Field, section string) *ast.File {
 	if exists {
 		fmt.Printf("astSection = %v", astSection)
 		astSection.Fields = append(astSection.Fields, field)
+	} else {
+		// Create new section
 	}
 
 	return f

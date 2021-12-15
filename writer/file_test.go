@@ -45,11 +45,11 @@ func TestMakeSection(t *testing.T) {
 	s := "[foo \"sub\"]"
 	section := ast.MakeSection(s, 0)
 
-	if strings.Contains(section.Title, "[") {
-		t.Errorf("Expected section title not to contain brackets. Got %v", section.Title)
+	if strings.Contains(section.Key, "[") {
+		t.Errorf("Expected section title not to contain brackets. Got %v", section.Key)
 	}
-	if strings.Contains(section.Title, "]") {
-		t.Errorf("Expected section title not to contain brackets. Got %v", section.Title)
+	if strings.Contains(section.Key, "]") {
+		t.Errorf("Expected section title not to contain brackets. Got %v", section.Key)
 	}
 }
 
@@ -86,7 +86,7 @@ xfoo =
 
 }
 
-func TestCanonicaliseSectionTitle(t *testing.T) {
+func TestGetSectionKey(t *testing.T) {
 	config := `[FOObar]
 bar = value1
 `
@@ -99,8 +99,8 @@ bar = value1
 	}
 
 	file := readIntoStruct(f)
-	if file.Sections[0].Title != "foobar" {
-		t.Errorf("Expected foobar. Got %v", file.Sections[0].Title)
+	if file.Sections[0].Key != "foobar" {
+		t.Errorf("Expected foobar. Got %v", file.Sections[0].Key)
 	}
 
 	if err := f.Close(); err != nil {
@@ -110,11 +110,12 @@ bar = value1
 }
 
 func TestInjectFieldIntoAST(t *testing.T) {
-	config := `[hallmark]
+	config := `[hallMaRk]
 christmas = merry
+newyear = happy
 
 [Rosaceae]
-Malus domestica = apple
+Malus domestica = Orchard apple
 `
 	f, err := os.CreateTemp("", "test")
 	if err != nil {
@@ -126,17 +127,19 @@ Malus domestica = apple
 
 	file := readIntoStruct(f)
 	field := ast.Field{
-		Key:   "newyear",
-		Value: "happy",
+		Key:   "Malus prunifolia",
+		Value: "Chinese crabapple",
 	}
-	injectField(file, field, "rosaceae")
+	file = injectField(file, field, "rosaceae")
 
 	if file.NumSections != 2 {
 		t.Errorf("Expected 2 sections in config. Got %v", file.NumSections)
-	} else if !(file.Sections[0].Title == "hallmark" && file.Sections[1].Title == "rosaceae") {
-		t.Errorf("Expected sections \"hallmark\" and \"rosaceae\". Got \"%v\" and \"%v\"", file.Sections[0].Title, file.Sections[1].Title)
+	} else if !(file.Sections[0].Key == "hallmark" && file.Sections[1].Key == "rosaceae") {
+		t.Errorf("Expected sections \"hallmark\" and \"rosaceae\". Got \"%v\" and \"%v\"", file.Sections[0].Key, file.Sections[1].Key)
+	} else if len(file.Sections[0].Fields) != 1 {
+		t.Errorf("Expected section hallmark to have 1 field. Got %v", len(file.Sections[0].Fields))
 	} else if len(file.Sections[1].Fields) != 2 {
-		t.Errorf("Expected section Rosaceae to have 2 fields. Got %v", len(file.Sections[1].Fields))
+		t.Errorf("Expected section rosaceae to have 2 fields. Got %v", len(file.Sections[1].Fields))
 	} else if file.Sections[1].Fields[1].Key != field.Key {
 		t.Errorf("Expected injected field to have key %v. Got %v", field.Key, file.Sections[1].Fields[1].Key)
 	} else if file.Sections[1].Fields[1].Value != field.Value {

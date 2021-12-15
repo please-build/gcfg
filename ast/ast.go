@@ -47,7 +47,8 @@ type Field struct {
 
 func MakeSection(s string, line int) Section {
 	return Section{
-		Title: getSectionTitleFromString(s),
+		Title: s,
+		Key:   getSectionKeyFromString(s),
 		Line:  line,
 	}
 }
@@ -64,7 +65,7 @@ func MakeField(s string) Field {
 	return f
 }
 
-func getSectionTitleFromString(s string) string {
+func getSectionKeyFromString(s string) string {
 	n := strings.Count(s, "[")
 	n += strings.Count(s, "]")
 	if n != 2 {
