@@ -21,24 +21,28 @@ func readIntoStruct(file *os.File) ast.File {
 	scanner := bufio.NewScanner(ioreader)
 
 	//TODO: Check for duplicate sections and collapse/warn if found?
+	//TODO: Handle comments
+	//TODO: Handle lines before first section
 
 	currentSection := ""
 	for scanner.Scan() {
 		line := scanner.Text()
-		if line == "" {
-			f.Lines += 1
-		} else if line[0] == '[' && line[len(line)-1] == ']' {
-			f.Sections = append(f.Sections, ast.MakeSection(line, f.Lines))
-			currentSection = f.Sections[len(f.Sections)-1].Key
-			f.NumSections += 1
-			f.Lines += 1
-		} else if strings.Contains(line, "=") {
+		if strings.Contains(line, "=") || line == "" {
 			// Append field to the current section
+			if currentSection == "" {
+				f.Lines += 1
+				continue
+			}
 			for i, s := range f.Sections {
 				if s.Key == currentSection {
 					f.Sections[i].Fields = append(f.Sections[i].Fields, ast.MakeField(line))
 				}
 			}
+			f.Lines += 1
+		} else if line[0] == '[' && line[len(line)-1] == ']' {
+			f.Sections = append(f.Sections, ast.MakeSection(line, f.Lines))
+			currentSection = f.Sections[len(f.Sections)-1].Key
+			f.NumSections += 1
 			f.Lines += 1
 		} else {
 			f.Lines += 1

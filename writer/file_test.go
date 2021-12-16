@@ -2,6 +2,7 @@ package writer
 
 import (
 	"bytes"
+	"io/ioutil"
 	"log"
 	"os"
 	"strings"
@@ -29,6 +30,7 @@ xfoo =
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer os.Remove(f.Name())
 	if _, err := f.Write([]byte(config)); err != nil {
 		log.Fatal(err)
 	}
@@ -74,6 +76,7 @@ xfoo =
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer os.Remove(f.Name())
 	if _, err := f.Write([]byte(config)); err != nil {
 		log.Fatal(err)
 	}
@@ -95,6 +98,7 @@ bar = value1
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer os.Remove(f.Name())
 	if _, err := f.Write([]byte(config)); err != nil {
 		log.Fatal(err)
 	}
@@ -122,6 +126,7 @@ Malus domestica = Orchard apple
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer os.Remove(f.Name())
 	if _, err := f.Write([]byte(config)); err != nil {
 		log.Fatal(err)
 	}
@@ -139,7 +144,7 @@ Malus domestica = Orchard apple
 		t.Errorf("Expected 2 sections in config. Got %v", file.NumSections)
 	} else if !(file.Sections[0].Key == "hallmark" && file.Sections[1].Key == "rosaceae") {
 		t.Errorf("Expected sections \"hallmark\" and \"rosaceae\". Got \"%v\" and \"%v\"", file.Sections[0].Key, file.Sections[1].Key)
-	} else if len(file.Sections[0].Fields) != 2 {
+	} else if len(file.Sections[0].Fields) != 3 {
 		t.Errorf("Expected section hallmark to have 2 fields. Got %v", len(file.Sections[0].Fields))
 	} else if len(file.Sections[1].Fields) != 2 {
 		t.Errorf("Expected section rosaceae to have 2 fields. Got %v", len(file.Sections[1].Fields))
@@ -162,6 +167,8 @@ Malus domestica = Orchard apple
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer os.Remove(f.Name())
+
 	if _, err := f.Write([]byte(config)); err != nil {
 		log.Fatal(err)
 	}
@@ -170,8 +177,18 @@ Malus domestica = Orchard apple
 
 	// Convert to bytes
 	data := convertASTToBytes(file)
+	f1, err := os.CreateTemp("", "test")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer os.Remove(f1.Name())
 
-	if bytes.Compare([]byte(config), data) != 0 {
-		t.Errorf("config and data not the same. config=\n%v\ndata=\n%v", config, data)
+	writeBytesToFile(data, f1.Name())
+
+	expectedBytes, err := ioutil.ReadFile(f.Name())
+	resultBytes, err := ioutil.ReadFile(f1.Name())
+
+	if bytes.Compare(expectedBytes, resultBytes) != 0 {
+		t.Errorf("config and data not the same.\nconfig:\n%v\ndata:\n%v", expectedBytes, resultBytes)
 	}
 }

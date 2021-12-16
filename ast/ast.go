@@ -43,6 +43,14 @@ func MakeSection(s string, line int) Section {
 }
 
 func MakeField(s string) Field {
+	// A field can be a blank line
+	if s == "" {
+		return Field{
+			Key:   "",
+			Value: "",
+		}
+	}
+
 	split := strings.Split(s, "=")
 	if len(split) != 2 {
 		log.Fatalf("Got invalid field \"%v\"", s)
@@ -69,15 +77,17 @@ func (s Section) ToBytes() []byte {
 	if s.Key == "" {
 		log.Fatalf("Tried to convert an empty section to byte slice")
 	}
-	log.Printf("ToBytes() converted %v to %v", s.Title, []byte(s.Title))
-	return []byte(s.Title)
+	return []byte(s.Title + "\n")
 }
 
 func (f Field) ToBytes() []byte {
+	if f.Key == "" && f.Value == "" {
+		return []byte("\n")
+	}
 	if f.Key == "" || f.Value == "" {
 		log.Fatalf("Key or value missing for field: %v", f)
 	}
 
-	s := f.Key + "=" + f.Value
+	s := f.Key + "=" + f.Value + "\n"
 	return []byte(s)
 }
