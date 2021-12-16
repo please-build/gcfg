@@ -133,14 +133,14 @@ Malus domestica = Orchard apple
 	}
 	file = injectField(file, field, "rosaceae")
 
-	if file.Lines != 6 {
+	if file.Lines != 7 {
 		t.Errorf("Expected read file to have 7 lines. Got %v", file.Lines)
 	} else if file.NumSections != 2 {
 		t.Errorf("Expected 2 sections in config. Got %v", file.NumSections)
 	} else if !(file.Sections[0].Key == "hallmark" && file.Sections[1].Key == "rosaceae") {
 		t.Errorf("Expected sections \"hallmark\" and \"rosaceae\". Got \"%v\" and \"%v\"", file.Sections[0].Key, file.Sections[1].Key)
-	} else if len(file.Sections[0].Fields) != 1 {
-		t.Errorf("Expected section hallmark to have 1 field. Got %v", len(file.Sections[0].Fields))
+	} else if len(file.Sections[0].Fields) != 2 {
+		t.Errorf("Expected section hallmark to have 2 fields. Got %v", len(file.Sections[0].Fields))
 	} else if len(file.Sections[1].Fields) != 2 {
 		t.Errorf("Expected section rosaceae to have 2 fields. Got %v", len(file.Sections[1].Fields))
 	} else if file.Sections[1].Fields[1].Key != field.Key {

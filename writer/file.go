@@ -39,11 +39,14 @@ func readIntoStruct(file *os.File) ast.File {
 		} else if strings.Contains(line, "=") {
 			// This is a field, so append this to the current section
 			log.Printf("Found field %v", line)
-			for _, s := range f.Sections {
+			log.Printf("looping through sections to find %v", currentSection)
+			for i, s := range f.Sections {
+				log.Printf("\ttrying section %v", s.Key)
 				if s.Key == currentSection {
-					s.Fields = append(s.Fields, ast.MakeField(line))
+					log.Printf("section %v has %v fields", s.Key, len(f.Sections[i].Fields))
+					f.Sections[i].Fields = append(f.Sections[i].Fields, ast.MakeField(line))
 					log.Printf("appending field \"%v\" to section \"%v\"", line, s)
-					log.Printf("so now section %v has %v fields", s.Key, len(s.Fields))
+					log.Printf("so now section %v has %v fields", s.Key, len(f.Sections[i].Fields))
 				}
 			}
 			f.Lines += 1
@@ -56,6 +59,7 @@ func readIntoStruct(file *os.File) ast.File {
 }
 
 func injectField(f ast.File, field ast.Field, section string) ast.File {
+	fmt.Printf("in injectField\n")
 	// Read the file so we know where to inject
 	section = strings.ToLower(section)
 
@@ -64,18 +68,18 @@ func injectField(f ast.File, field ast.Field, section string) ast.File {
 
 	// Does the section exist?
 	exists := false
-	var astSection ast.Section
-	for _, s := range f.Sections {
-		if s.Title == section {
+	for i, s := range f.Sections {
+		if s.Key == section {
 			exists = true
-			astSection = s
+			f.Sections[i].Fields = append(f.Sections[i].Fields, field)
 		}
 	}
 
 	if exists {
-		fmt.Printf("astSection = %v", astSection)
-		astSection.Fields = append(astSection.Fields, field)
+		//fmt.Printf("astSection = %v\n", astSection)
+		//astSection.Fields = append(astSection.Fields, field)
 	} else {
+		fmt.Printf("doesn't exist\n")
 		// Create new section
 	}
 
