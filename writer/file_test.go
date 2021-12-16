@@ -192,3 +192,15 @@ Malus domestica = Orchard apple
 		t.Errorf("config and data not the same.\nconfig:\n%v\ndata:\n%v", expectedBytes, resultBytes)
 	}
 }
+
+func TestReadInjectWrite(t *testing.T) {
+	config := `[hallMaRk]
+christmas = merry
+newyear = happy
+
+[Rosaceae]
+Malus domestica = Orchard apple
+`
+	expectedResult := 
+		
+}
