@@ -2,7 +2,6 @@ package writer
 
 import (
 	"bufio"
-	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -25,28 +24,19 @@ func readIntoStruct(file *os.File) ast.File {
 
 	currentSection := ""
 	for scanner.Scan() {
-		log.Printf("scanning line %v", f.Lines)
 		line := scanner.Text()
 		if line == "" {
 			f.Lines += 1
 		} else if line[0] == '[' && line[len(line)-1] == ']' {
 			f.Sections = append(f.Sections, ast.MakeSection(line, f.Lines))
-			// f.Sections[ast.GetSectionTitleFromString(line)] = ast.MakeSection(line, f.Lines)
 			currentSection = f.Sections[len(f.Sections)-1].Key
-			log.Printf("currentSection = \"%v\"", currentSection)
 			f.NumSections += 1
 			f.Lines += 1
 		} else if strings.Contains(line, "=") {
-			// This is a field, so append this to the current section
-			log.Printf("Found field %v", line)
-			log.Printf("looping through sections to find %v", currentSection)
+			// Append field to the current section
 			for i, s := range f.Sections {
-				log.Printf("\ttrying section %v", s.Key)
 				if s.Key == currentSection {
-					log.Printf("section %v has %v fields", s.Key, len(f.Sections[i].Fields))
 					f.Sections[i].Fields = append(f.Sections[i].Fields, ast.MakeField(line))
-					log.Printf("appending field \"%v\" to section \"%v\"", line, s)
-					log.Printf("so now section %v has %v fields", s.Key, len(f.Sections[i].Fields))
 				}
 			}
 			f.Lines += 1
@@ -59,7 +49,6 @@ func readIntoStruct(file *os.File) ast.File {
 }
 
 func injectField(f ast.File, field ast.Field, section string) ast.File {
-	fmt.Printf("in injectField\n")
 	// Read the file so we know where to inject
 	section = strings.ToLower(section)
 
@@ -76,10 +65,8 @@ func injectField(f ast.File, field ast.Field, section string) ast.File {
 	}
 
 	if exists {
-		//fmt.Printf("astSection = %v\n", astSection)
 		//astSection.Fields = append(astSection.Fields, field)
 	} else {
-		fmt.Printf("doesn't exist\n")
 		// Create new section
 	}
 

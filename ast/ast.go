@@ -69,7 +69,7 @@ func (s Section) ToBytes() []byte {
 	if s.Key == "" {
 		log.Fatalf("Tried to convert an empty section to byte slice")
 	}
-
+	log.Printf("ToBytes() converted %v to %v", s.Title, []byte(s.Title))
 	return []byte(s.Title)
 }
 
