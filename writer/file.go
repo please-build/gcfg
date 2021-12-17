@@ -21,8 +21,8 @@ func readIntoStruct(file *os.File) ast.File {
 	scanner := bufio.NewScanner(ioreader)
 
 	//TODO: Check for duplicate sections and collapse/warn if found?
-	//TODO: Handle comments
 	//TODO: Handle lines before first section
+	//TODO: Handle subsections ('[Section "subsection"]')
 
 	currentSection := ""
 	for scanner.Scan() {
