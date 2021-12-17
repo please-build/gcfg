@@ -15,9 +15,7 @@ type File struct {
 	Size int    // file size as provided to AddFile
 
 	// lines and infos are protected by set.mutex
-	Lines       int
-	NumSections int
-	// Sections    map[string]Section
+	Lines    int
 	Sections []Section
 }
 
@@ -32,6 +30,10 @@ type Section struct {
 type Field struct {
 	Key   string
 	Value string
+
+	// If a comment line is found, store it here
+	// and leave Key and Value empty
+	Comment string
 }
 
 func MakeSection(s string, line int) Section {
@@ -48,6 +50,12 @@ func MakeField(s string) Field {
 		return Field{
 			Key:   "",
 			Value: "",
+		}
+	} else if strings.HasPrefix(s, ";") || strings.HasPrefix(s, "#") {
+		return Field{
+			Key:     "",
+			Value:   "",
+			Comment: s,
 		}
 	}
 
@@ -81,6 +89,9 @@ func (s Section) ToBytes() []byte {
 }
 
 func (f Field) ToBytes() []byte {
+	if f.Comment != "" {
+		return []byte(f.Comment + "\n")
+	}
 	if f.Key == "" && f.Value == "" {
 		return []byte("\n")
 	}

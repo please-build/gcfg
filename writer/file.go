@@ -27,7 +27,7 @@ func readIntoStruct(file *os.File) ast.File {
 	currentSection := ""
 	for scanner.Scan() {
 		line := scanner.Text()
-		if strings.Contains(line, "=") || line == "" {
+		if strings.Contains(line, "=") || line == "" || strings.HasPrefix(line, ";") || strings.HasPrefix(line, "#") {
 			// Append field to the current section
 			if currentSection == "" {
 				f.Lines += 1
@@ -42,7 +42,6 @@ func readIntoStruct(file *os.File) ast.File {
 		} else if line[0] == '[' && line[len(line)-1] == ']' {
 			f.Sections = append(f.Sections, ast.MakeSection(line, f.Lines))
 			currentSection = f.Sections[len(f.Sections)-1].Key
-			f.NumSections += 1
 			f.Lines += 1
 		} else {
 			f.Lines += 1
@@ -58,6 +57,14 @@ func injectField(f ast.File, field ast.Field, section string) ast.File {
 
 	// Increment total lines in file
 	f.Lines += 1
+
+	// Format field correctly for injection
+	if !(strings.HasSuffix(field.Key, " ")) {
+		field.Key += " "
+	}
+	if !(strings.HasPrefix(field.Value, " ")) {
+		field.Value = " " + field.Value
+	}
 
 	// Does the section exist?
 	exists := false
@@ -83,6 +90,7 @@ func convertASTToBytes(f ast.File) []byte {
 	for _, section := range f.Sections {
 		data = append(data, section.ToBytes()...)
 		for _, field := range section.Fields {
+			log.Printf("Writing field \"%v\"", field)
 			data = append(data, field.ToBytes()...)
 		}
 	}
