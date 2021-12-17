@@ -22,7 +22,6 @@ func readIntoStruct(file *os.File) ast.File {
 
 	//TODO: Check for duplicate sections and collapse/warn if found?
 	//TODO: Handle lines before first section
-	//TODO: Handle subsections ('[Section "subsection"]')
 
 	currentSection := ""
 	for scanner.Scan() {
@@ -90,7 +89,6 @@ func convertASTToBytes(f ast.File) []byte {
 	for _, section := range f.Sections {
 		data = append(data, section.ToBytes()...)
 		for _, field := range section.Fields {
-			log.Printf("Writing field \"%v\"", field)
 			data = append(data, field.ToBytes()...)
 		}
 	}

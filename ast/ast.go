@@ -20,7 +20,9 @@ type File struct {
 }
 
 type Section struct {
-	Title             string
+	// This is the section header as read from the config file
+	Header string
+	// Canonicalised key for identifying the section
 	Key               string
 	Line              int
 	Fields            []Field
@@ -38,9 +40,9 @@ type Field struct {
 
 func MakeSection(s string, line int) Section {
 	return Section{
-		Title: s,
-		Key:   getSectionKeyFromString(s),
-		Line:  line,
+		Header: s,
+		Key:    getSectionKeyFromString(s),
+		Line:   line,
 	}
 }
 
@@ -85,7 +87,7 @@ func (s Section) ToBytes() []byte {
 	if s.Key == "" {
 		log.Fatalf("Tried to convert an empty section to byte slice")
 	}
-	return []byte(s.Title + "\n")
+	return []byte(s.Header + "\n")
 }
 
 func (f Field) ToBytes() []byte {

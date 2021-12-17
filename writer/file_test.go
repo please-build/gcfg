@@ -49,10 +49,10 @@ func TestMakeSection(t *testing.T) {
 	section := ast.MakeSection(s, 0)
 
 	if strings.Contains(section.Key, "[") {
-		t.Errorf("Expected section title not to contain brackets. Got %v", section.Key)
+		t.Errorf("Expected section key not to contain brackets. Got %v", section.Key)
 	}
 	if strings.Contains(section.Key, "]") {
-		t.Errorf("Expected section title not to contain brackets. Got %v", section.Key)
+		t.Errorf("Expected section key not to contain brackets. Got %v", section.Key)
 	}
 }
 
@@ -283,6 +283,70 @@ Malus prunifolia = Chinese crabapple
 		Value: "Chinese crabapple",
 	}
 	file = injectField(file, field, "rosaceae")
+
+	// Convert to bytes
+	data := convertASTToBytes(file)
+
+	f1, err := os.CreateTemp("", "test")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer os.Remove(f1.Name())
+
+	writeBytesToFile(data, f1.Name())
+
+	expectedBytes := []byte(expectedResult)
+	resultBytes, err := ioutil.ReadFile(f1.Name())
+
+	if bytes.Compare(expectedBytes, resultBytes) != 0 {
+		t.Errorf("Result and expected not the same.\nconfig:\n%v\ndata:\n%v", expectedBytes, resultBytes)
+	}
+}
+
+func TestHandleSubsections(t *testing.T) {
+	config := `[hallMaRk]
+christmas = merry
+newyear = happy
+
+[Rosaceae "subsection"]
+; Malus is a genus of small deciduous
+; trees in the Rosaceae family
+Malus domestica = Orchard apple
+`
+	expectedResult := `[hallMaRk]
+christmas = merry
+newyear = happy
+
+[Rosaceae "subsection"]
+; Malus is a genus of small deciduous
+; trees in the Rosaceae family
+Malus domestica = Orchard apple
+Malus prunifolia = Chinese crabapple
+`
+	f, err := os.CreateTemp("", "test")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer os.Remove(f.Name())
+	if _, err := f.Write([]byte(config)); err != nil {
+		log.Fatal(err)
+	}
+
+	file := readIntoStruct(f)
+	if len(file.Sections) != 2 {
+		t.Errorf("Expected 2 sections . Got %v", len(file.Sections))
+	}
+	if file.Sections[1].Key != "rosaceae \"subsection\"" {
+		t.Errorf("Expected section key 'rosaceae \"subsection\"'. Got '%v'", file.Sections[1].Key)
+	} else if file.Sections[1].Header != "[Rosaceae \"subsection\"]" {
+		t.Errorf("Expected section header '[Rosaceae \"subsection\"]'. Got '%v'", file.Sections[1].Header)
+	}
+
+	field := ast.Field{
+		Key:   "Malus prunifolia",
+		Value: "Chinese crabapple",
+	}
+	file = injectField(file, field, "rosaceae \"subsection\"")
 
 	// Convert to bytes
 	data := convertASTToBytes(file)
