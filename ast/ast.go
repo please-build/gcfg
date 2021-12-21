@@ -38,10 +38,10 @@ type Field struct {
 	Comment string
 }
 
-func MakeSection(s string, line int) Section {
+func MakeSection(header string, line int) Section {
 	return Section{
-		Header: s,
-		Key:    getSectionKeyFromString(s),
+		Header: header,
+		Key:    getSectionKeyFromString(header),
 		Line:   line,
 	}
 }
@@ -103,4 +103,22 @@ func (f Field) ToBytes() []byte {
 
 	s := f.Key + "=" + f.Value + "\n"
 	return []byte(s)
+}
+
+func (f File) PrintDebug() {
+	log.Printf("Name: %v", f.Name)
+	log.Printf("Lines: %v", f.Lines)
+	log.Printf("Contents:")
+	for _, s := range f.Sections {
+		log.Printf("%v", s.Header)
+		for _, field := range s.Fields {
+			if field.Key == "" && field.Value == "" && field.Comment == "" {
+				log.Printf("")
+			} else if field.Comment == "" {
+				log.Printf("%v=%v", field.Key, field.Value)
+			} else {
+				log.Printf("%v", field.Comment)
+			}
+		}
+	}
 }
