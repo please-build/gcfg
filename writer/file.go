@@ -31,7 +31,7 @@ func readIntoStruct(file *os.File) ast.File {
 				if len(f.Sections) == 0 {
 					// If we're in here, then we're picking up some preamble
 					// which could be blank lines, or comments, or something else.
-					f.Sections = append(f.Sections, ast.MakeSection("[_preamble]", f.NumLines))
+					f.Sections = append(f.Sections, ast.MakeSection("[_preamble]"))
 					currentSection = "_preamble"
 				}
 			}
@@ -42,7 +42,7 @@ func readIntoStruct(file *os.File) ast.File {
 			}
 			f.NumLines += 1
 		} else if line[0] == '[' && line[len(line)-1] == ']' {
-			f.Sections = append(f.Sections, ast.MakeSection(line, f.NumLines))
+			f.Sections = append(f.Sections, ast.MakeSection(line))
 			currentSection = f.Sections[len(f.Sections)-1].Key
 			f.NumLines += 1
 		} else {
@@ -91,9 +91,8 @@ func injectField(f ast.File, field ast.Field, section string) ast.File {
 			lastSection.Fields = append(lastSection.Fields, ast.Field{Key: "", Value: ""})
 		}
 
-		n := 4
 		header := ast.MakeSectionHeader(section)
-		astSection := ast.MakeSection(header, n)
+		astSection := ast.MakeSection(header)
 		astSection.Fields = append(astSection.Fields, field)
 		f.Sections = append(f.Sections, astSection)
 	}

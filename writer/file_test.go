@@ -46,7 +46,7 @@ xfoo =
 
 func TestMakeSection(t *testing.T) {
 	s := "[foo \"sub\"]"
-	section := ast.MakeSection(s, 0)
+	section := ast.MakeSection(s)
 
 	if strings.Contains(section.Key, "[") {
 		t.Errorf("Expected section key not to contain brackets. Got %v", section.Key)

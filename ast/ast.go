@@ -19,7 +19,6 @@ type Section struct {
 	Header string
 	// Canonicalised key for identifying the section
 	Key               string
-	Line              int
 	Fields            []Field
 	LeadingWhiteSpace int
 }
@@ -33,7 +32,7 @@ type Field struct {
 	Comment string
 }
 
-func MakeSection(header string, line int) Section {
+func MakeSection(header string) Section {
 	return Section{
 		Header: header,
 		Key:    GetSectionKeyFromString(header),
