@@ -5,25 +5,17 @@ import (
 	"strings"
 )
 
-// A File is a handle for a file belonging to a FileSet.
-// A File has a name, size, and line offset table.
-//
+// A File is an AST representation of a config file.
 type File struct {
-	// set  *FileSet
 	Name string // file name as provided to AddFile
-	Base int    // Pos value range for this file is [base...base+size]
-	Size int    // file size as provided to AddFile
 
-	// lines and infos are protected by set.mutex
 	Lines    int
 	Sections []Section
 }
 
 type Section struct {
-	// This is the section header as read from the config file
-	Header string
-	// Canonicalised key for identifying the section
-	Key               string
+	Header            string // Section header as read from the config file
+	Key               string // Canonicalised key for identifying the section
 	Line              int
 	Fields            []Field
 	LeadingWhiteSpace int
@@ -47,13 +39,11 @@ func MakeSection(header string, line int) Section {
 }
 
 func MakeField(s string) Field {
-	// A field can be a blank line
 	if s == "" {
-		return Field{
-			Key:   "",
-			Value: "",
-		}
+		// A field can be a blank line
+		return Field{}
 	} else if strings.HasPrefix(s, ";") || strings.HasPrefix(s, "#") {
+		// or a comment
 		return Field{
 			Key:     "",
 			Value:   "",
@@ -71,6 +61,8 @@ func MakeField(s string) Field {
 	}
 }
 
+// Strip brackets from section header and lower,
+// e.g. '[Something "sub"]' -> 'something "sub"'
 func getSectionKeyFromString(s string) string {
 	n := strings.Count(s, "[")
 	n += strings.Count(s, "]")
@@ -83,6 +75,8 @@ func getSectionKeyFromString(s string) string {
 	return stripped
 }
 
+// Return correctly formatted section header as
+// byte slice. Needed for writing to output file.
 func (s Section) ToBytes() []byte {
 	if s.Key == "" {
 		log.Fatalf("Tried to convert an empty section to byte slice")
@@ -90,6 +84,8 @@ func (s Section) ToBytes() []byte {
 	return []byte(s.Header + "\n")
 }
 
+// Return a field as a byte slice. Needed for writing
+// to output file.
 func (f Field) ToBytes() []byte {
 	if f.Comment != "" {
 		return []byte(f.Comment + "\n")
@@ -105,6 +101,7 @@ func (f Field) ToBytes() []byte {
 	return []byte(s)
 }
 
+// Print an entire AST File to help with debugging
 func (f File) PrintDebug() {
 	log.Printf("Name: %v", f.Name)
 	log.Printf("Lines: %v", f.Lines)
