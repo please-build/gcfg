@@ -31,7 +31,7 @@ func readIntoStruct(file *os.File) ast.File {
 				if len(f.Sections) == 0 {
 					// If we're in here, then we're picking up some preamble
 					// which could be blank lines, or comments, or something else.
-					f.Sections = append(f.Sections, ast.MakeSection("[_preamble]", f.Lines))
+					f.Sections = append(f.Sections, ast.MakeSection("[_preamble]", f.NumLines))
 					currentSection = "_preamble"
 				}
 			}
@@ -40,13 +40,13 @@ func readIntoStruct(file *os.File) ast.File {
 					f.Sections[i].Fields = append(f.Sections[i].Fields, ast.MakeField(line))
 				}
 			}
-			f.Lines += 1
+			f.NumLines += 1
 		} else if line[0] == '[' && line[len(line)-1] == ']' {
-			f.Sections = append(f.Sections, ast.MakeSection(line, f.Lines))
+			f.Sections = append(f.Sections, ast.MakeSection(line, f.NumLines))
 			currentSection = f.Sections[len(f.Sections)-1].Key
-			f.Lines += 1
+			f.NumLines += 1
 		} else {
-			f.Lines += 1
+			f.NumLines += 1
 		}
 	}
 
@@ -55,7 +55,7 @@ func readIntoStruct(file *os.File) ast.File {
 
 func injectField(f ast.File, field ast.Field, section string) ast.File {
 	// Read the file so we know where to inject
-	section = strings.ToLower(section)
+	sectionKey := ast.GetSectionKeyFromString(section)
 
 	// Format field correctly for injection
 	if !(strings.HasSuffix(field.Key, " ")) {
@@ -68,33 +68,36 @@ func injectField(f ast.File, field ast.Field, section string) ast.File {
 	// Does the section exist?
 	exists := false
 	for i, s := range f.Sections {
-		if s.Key == section {
+		if s.Key == sectionKey {
 			exists = true
 			f.Sections[i].Fields = append(f.Sections[i].Fields, field)
-			f.Lines += 1
-
+			f.NumLines += 1
 		}
 	}
 
 	if !exists {
 		log.Printf("This section doesn't exist. Need to create a new one")
 		// Check if file currently ends with a blank line
-		needToAppendSpace := false
+		needToAppendSpace := true
 		lastSection := &f.Sections[len(f.Sections)-1]
 		if len(lastSection.Fields) > 0 {
 			lastField := &lastSection.Fields[len(lastSection.Fields)-1]
-			if lastField.Comment == "" && lastField.Key == "" && lastField.Value == "" {
+			if lastField.IsBlankLine() {
 				needToAppendSpace = false
-			} else if lastField.Comment != "" {
-				needToAppendSpace = true
 			}
 		}
 
 		if needToAppendSpace {
-			append(lastSection.Fields, ast.Field{Key: "", Value: ""})
+			lastSection.Fields = append(lastSection.Fields, ast.Field{Key: "", Value: ""})
 		}
-		//astSection.Fields = append(astSection.Fields, field)
+
+		n := 4
+		header := ast.MakeSectionHeader(section)
+		astSection := ast.MakeSection(header, n)
+		astSection.Fields = append(astSection.Fields, field)
+		f.Sections = append(f.Sections, astSection)
 	}
+
 	return f
 }
 

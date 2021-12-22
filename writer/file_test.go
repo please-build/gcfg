@@ -56,40 +56,6 @@ func TestMakeSection(t *testing.T) {
 	}
 }
 
-func TestSectionLineNumbers(t *testing.T) {
-	config := `[foo "sub"]
-bar = value1
-baz = value2
-f--bar = true
-bfoo = false
-bazbar = 0
-[curried crab]
-foobaz = -5
-bar-foo = 10
-baz-baz = value3
-baz-baz = value4
-bar-key = bar-value
-ǂbar = 
-xfoo = 
-`
-	f, err := os.CreateTemp("", "test")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer os.Remove(f.Name())
-	if _, err := f.Write([]byte(config)); err != nil {
-		log.Fatal(err)
-	}
-	file := readIntoStruct(f)
-	if len(file.Sections) != 2 {
-		t.Errorf("Expected number of sections == 2. Got %v", len(file.Sections))
-	}
-	if !(file.Sections[0].Line == 0 && file.Sections[1].Line == 6) {
-		t.Errorf("Expected sections at lines 0 and 6 but got %v and %v", file.Sections[0].Line, file.Sections[1].Line)
-	}
-
-}
-
 func TestGetSectionKey(t *testing.T) {
 	config := `[FOObar]
 bar = value1
@@ -138,8 +104,8 @@ Malus domestica = Orchard apple
 	}
 	file = injectField(file, field, "rosaceae")
 
-	if file.Lines != 7 {
-		t.Errorf("Expected read file to have 7 lines. Got %v", file.Lines)
+	if file.NumLines != 7 {
+		t.Errorf("Expected read file to have 7 lines. Got %v", file.NumLines)
 	} else if len(file.Sections) != 2 {
 		t.Errorf("Expected 2 sections in config. Got %v", len(file.Sections))
 	} else if !(file.Sections[0].Key == "hallmark" && file.Sections[1].Key == "rosaceae") {
@@ -399,8 +365,8 @@ Malus domestica = Orchard apple
 		t.Errorf("Expected first section key to be called \"_preamble\". Got \"%v\"", file.Sections[0].Key)
 	} else if len(file.Sections[0].Fields) != 4 {
 		t.Errorf("Expected preamble to have 4 fields. Got %v", len(file.Sections[0].Fields))
-	} else if file.Lines != 12 {
-		t.Errorf("Expected read file to contain 12 lines. Got %v", file.Lines)
+	} else if file.NumLines != 12 {
+		t.Errorf("Expected read file to contain 12 lines. Got %v", file.NumLines)
 	}
 
 }
@@ -455,12 +421,12 @@ field = value
 	file1 := readIntoStruct(f1)
 	file2 := readIntoStruct(f2)
 
-	if file.Lines != 3 {
-		t.Errorf("Expected file to have 3 lines. Got %v", file.Lines)
-	} else if file1.Lines != 4 {
-		t.Errorf("Expected file to have 4 lines. Got %v", file1.Lines)
-	} else if file2.Lines != 8 {
-		t.Errorf("Expected file to have 8 lines. Got %v", file2.Lines)
+	if file.NumLines != 3 {
+		t.Errorf("Expected file to have 3 lines. Got %v", file.NumLines)
+	} else if file1.NumLines != 4 {
+		t.Errorf("Expected file to have 4 lines. Got %v", file1.NumLines)
+	} else if file2.NumLines != 8 {
+		t.Errorf("Expected file to have 8 lines. Got %v", file2.NumLines)
 	}
 
 }
@@ -490,7 +456,20 @@ Malus domestica = Orchard apple
 
 	file := readIntoStruct(f)
 	field := ast.MakeField("e = mc2")
-	injectField(file, field, "newSectION")
+	file.PrintDebug()
+	file = injectField(file, field, "newSectION")
+
+	file.PrintDebug()
+
+	data := convertASTToBytes(file)
+	resultFile, err := os.CreateTemp("", "result")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer os.Remove(resultFile.Name())
+
+	writeBytesToFile(data, resultFile.Name())
+	resultBytes, err := ioutil.ReadFile(resultFile.Name())
 
 	expected := `orange = naranja
 red = rojo
@@ -508,19 +487,16 @@ Malus domestica = Orchard apple
 [newSectION]
 e = mc2
 `
-	resultsFile, err := os.CreateTemp("", "result")
+	expectedFile, err := os.CreateTemp("", "expected")
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer os.Remove(resultsFile.Name())
-	if _, err := f.Write([]byte(expected)); err != nil {
+	defer os.Remove(expectedFile.Name())
+	if _, err := expectedFile.Write([]byte(expected)); err != nil {
 		log.Fatal(err)
 	}
 
-	file.PrintDebug()
-
-	expectedBytes, err := ioutil.ReadFile(f.Name())
-	resultBytes, err := ioutil.ReadFile(resultsFile.Name())
+	expectedBytes, err := ioutil.ReadFile(expectedFile.Name())
 	if bytes.Compare(expectedBytes, resultBytes) != 0 {
 		t.Errorf("config and data not the same.\nconfig:\n%v\ndata:\n%v", expectedBytes, resultBytes)
 	}

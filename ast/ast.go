@@ -1,21 +1,24 @@
 package ast
 
 import (
+	"fmt"
 	"log"
 	"strings"
 )
 
 // A File is an AST representation of a config file.
 type File struct {
-	Name string // file name as provided to AddFile
-
-	Lines    int
+	// file name as provided to AddFile
+	Name     string
+	NumLines int
 	Sections []Section
 }
 
 type Section struct {
-	Header            string // Section header as read from the config file
-	Key               string // Canonicalised key for identifying the section
+	// Section header as read from the config file
+	Header string
+	// Canonicalised key for identifying the section
+	Key               string
 	Line              int
 	Fields            []Field
 	LeadingWhiteSpace int
@@ -33,8 +36,7 @@ type Field struct {
 func MakeSection(header string, line int) Section {
 	return Section{
 		Header: header,
-		Key:    getSectionKeyFromString(header),
-		Line:   line,
+		Key:    GetSectionKeyFromString(header),
 	}
 }
 
@@ -63,9 +65,12 @@ func MakeField(s string) Field {
 
 // Strip brackets from section header and lower,
 // e.g. '[Something "sub"]' -> 'something "sub"'
-func getSectionKeyFromString(s string) string {
+func GetSectionKeyFromString(s string) string {
 	n := strings.Count(s, "[")
 	n += strings.Count(s, "]")
+	if n == 0 {
+		return strings.ToLower(s)
+	}
 	if n != 2 {
 		log.Fatalf("Invalid section header: %v", s)
 	}
@@ -101,10 +106,16 @@ func (f Field) ToBytes() []byte {
 	return []byte(s)
 }
 
+func (f Field) IsBlankLine() bool {
+	return f.Comment == "" &&
+		f.Key == "" &&
+		f.Value == ""
+}
+
 // Print an entire AST File to help with debugging
 func (f File) PrintDebug() {
 	log.Printf("Name: %v", f.Name)
-	log.Printf("Lines: %v", f.Lines)
+	log.Printf("Lines: %v", f.NumLines)
 	log.Printf("Contents:")
 	for _, s := range f.Sections {
 		log.Printf("%v", s.Header)
@@ -118,4 +129,26 @@ func (f File) PrintDebug() {
 			}
 		}
 	}
+}
+
+func MakeSectionHeader(s string) string {
+	n := strings.Count(s, "[")
+	n += strings.Count(s, "]")
+
+	if n > 2 {
+		panic(fmt.Sprintf("Badly-formed section header %v passed to MakeSectionHeader", s))
+	}
+	if n == 2 {
+		if strings.HasPrefix(s, "[") && strings.HasPrefix(s, "]") {
+			// This is a fully-formed section header
+			return s
+		}
+		panic(fmt.Sprintf("Badly-formed section header %v passed to MakeSectionHeader", s))
+	}
+	if n == 1 {
+		// This is a badly-formed section header
+		panic(fmt.Sprintf("Badly-formed section header %v passed to MakeSectionHeader", s))
+	}
+
+	return "[" + s + "]"
 }
