@@ -6,9 +6,8 @@ import (
 	"strings"
 )
 
-// A File is an AST representation of a config file.
+// A File is an AST representation of a config file
 type File struct {
-	// file name as provided to AddFile
 	Name     string
 	NumLines int
 	Sections []Section
@@ -130,6 +129,8 @@ func (f File) PrintDebug() {
 	}
 }
 
+// MakeSectionHeader tries to form a textual section header
+// from a string which may or may not have brackets already
 func MakeSectionHeader(s string) string {
 	n := strings.Count(s, "[")
 	n += strings.Count(s, "]")
@@ -145,7 +146,6 @@ func MakeSectionHeader(s string) string {
 		panic(fmt.Sprintf("Badly-formed section header %v passed to MakeSectionHeader", s))
 	}
 	if n == 1 {
-		// This is a badly-formed section header
 		panic(fmt.Sprintf("Badly-formed section header %v passed to MakeSectionHeader", s))
 	}
 
