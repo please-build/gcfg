@@ -53,7 +53,7 @@ func readIntoStruct(file *os.File) ast.File {
 	return f
 }
 
-func injectField(f ast.File, field ast.Field, section string) ast.File {
+func InjectField(f ast.File, field ast.Field, section string, repeatable bool) ast.File {
 	// Read the file so we know where to inject
 	sectionKey := ast.GetSectionKeyFromString(section)
 
@@ -65,37 +65,45 @@ func injectField(f ast.File, field ast.Field, section string) ast.File {
 		field.Value = " " + field.Value
 	}
 
-	// Does the section exist?
-	exists := false
+	// If section exists, add field to section
 	for i, s := range f.Sections {
 		if s.Key == sectionKey {
-			exists = true
+			if repeatable {
+				f.Sections[i].Fields = append(f.Sections[i].Fields, field)
+				f.NumLines += 1
+				return f
+			}
+			for j, k := range s.Fields {
+				if k.Key == field.Key {
+					f.Sections[i].Fields[j].Value = field.Value
+					return f
+				}
+			}
 			f.Sections[i].Fields = append(f.Sections[i].Fields, field)
 			f.NumLines += 1
+			return f
 		}
 	}
 
-	if !exists {
-		log.Printf("This section doesn't exist. Need to create a new one")
-		// Check if file currently ends with a blank line
-		needToAppendSpace := true
-		lastSection := &f.Sections[len(f.Sections)-1]
-		if len(lastSection.Fields) > 0 {
-			lastField := &lastSection.Fields[len(lastSection.Fields)-1]
-			if lastField.IsBlankLine() {
-				needToAppendSpace = false
-			}
+	// Couldn't find section so create new one
+	// Check if file currently ends with a blank line first
+	needToAppendSpace := true
+	lastSection := &f.Sections[len(f.Sections)-1]
+	if len(lastSection.Fields) > 0 {
+		lastField := &lastSection.Fields[len(lastSection.Fields)-1]
+		if lastField.IsBlankLine() {
+			needToAppendSpace = false
 		}
-
-		if needToAppendSpace {
-			lastSection.Fields = append(lastSection.Fields, ast.Field{Key: "", Value: ""})
-		}
-
-		header := ast.MakeSectionHeader(section)
-		astSection := ast.MakeSection(header)
-		astSection.Fields = append(astSection.Fields, field)
-		f.Sections = append(f.Sections, astSection)
 	}
+
+	if needToAppendSpace {
+		lastSection.Fields = append(lastSection.Fields, ast.Field{Key: "", Value: ""})
+	}
+
+	header := ast.MakeSectionHeader(section)
+	astSection := ast.MakeSection(header)
+	astSection.Fields = append(astSection.Fields, field)
+	f.Sections = append(f.Sections, astSection)
 
 	return f
 }

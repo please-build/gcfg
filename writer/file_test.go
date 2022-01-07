@@ -98,16 +98,20 @@ Malus domestica = Orchard apple
 	}
 
 	file := readIntoStruct(f)
+	if n := file.NumLines; n != 6 {
+		t.Errorf("Expected file to have 6 lines before insert. Got %v", n)
+	}
+
 	field := ast.Field{
 		Key:   "Malus prunifolia",
 		Value: "Chinese crabapple",
 	}
-	file = injectField(file, field, "rosaceae")
+	file = InjectField(file, field, "rosaceae", true)
 
-	if file.NumLines != 7 {
-		t.Errorf("Expected read file to have 7 lines. Got %v", file.NumLines)
-	} else if len(file.Sections) != 2 {
-		t.Errorf("Expected 2 sections in config. Got %v", len(file.Sections))
+	if n := file.NumLines; n != 7 {
+		t.Errorf("Expected file to have 7 lines after insert. Got %v", n)
+	} else if n := len(file.Sections); n != 2 {
+		t.Errorf("Expected 2 sections in config. Got %v", n)
 	} else if !(file.Sections[0].Key == "hallmark" && file.Sections[1].Key == "rosaceae") {
 		t.Errorf("Expected sections \"hallmark\" and \"rosaceae\". Got \"%v\" and \"%v\"", file.Sections[0].Key, file.Sections[1].Key)
 	} else if len(file.Sections[0].Fields) != 3 {
@@ -190,7 +194,7 @@ Malus prunifolia = Chinese crabapple
 		Key:   "Malus prunifolia",
 		Value: "Chinese crabapple",
 	}
-	file = injectField(file, field, "rosaceae")
+	file = InjectField(file, field, "rosaceae", true)
 
 	// Convert to bytes
 	data := convertASTToBytes(file)
@@ -249,7 +253,7 @@ Malus prunifolia = Chinese crabapple
 		Key:   "Malus prunifolia",
 		Value: "Chinese crabapple",
 	}
-	file = injectField(file, field, "rosaceae")
+	file = InjectField(file, field, "rosaceae", true)
 
 	// Convert to bytes
 	data := convertASTToBytes(file)
@@ -313,7 +317,7 @@ Malus prunifolia = Chinese crabapple
 		Key:   "Malus prunifolia",
 		Value: "Chinese crabapple",
 	}
-	file = injectField(file, field, "rosaceae \"subsection\"")
+	file = InjectField(file, field, "rosaceae \"subsection\"", true)
 
 	// Convert to bytes
 	data := convertASTToBytes(file)
@@ -457,7 +461,7 @@ Malus domestica = Orchard apple
 	file := readIntoStruct(f)
 	field := ast.MakeField("e = mc2")
 	file.PrintDebug()
-	file = injectField(file, field, "newSectION")
+	file = InjectField(file, field, "newSectION", true)
 
 	file.PrintDebug()
 
@@ -486,6 +490,71 @@ Malus domestica = Orchard apple
 
 [newSectION]
 e = mc2
+`
+	expectedFile, err := os.CreateTemp("", "expected")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer os.Remove(expectedFile.Name())
+	if _, err := expectedFile.Write([]byte(expected)); err != nil {
+		log.Fatal(err)
+	}
+
+	expectedBytes, err := ioutil.ReadFile(expectedFile.Name())
+	if bytes.Compare(expectedBytes, resultBytes) != 0 {
+		t.Errorf("config and data not the same.\nconfig:\n%v\ndata:\n%v", expectedBytes, resultBytes)
+	}
+}
+
+func TestInjectNonRepeatableField(t *testing.T) {
+	config := `orange = naranja
+red = rojo
+; This is a preamble
+
+[hallMaRk]
+christmas = merry
+newyear = happy
+
+[Rosaceae "subsection"]
+; Malus is a genus of small deciduous
+; trees in the Rosaceae family
+Malus domestica = Orchard apple
+`
+	f, err := os.CreateTemp("", "test")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer os.Remove(f.Name())
+	if _, err := f.Write([]byte(config)); err != nil {
+		log.Fatal(err)
+	}
+
+	file := readIntoStruct(f)
+	field := ast.MakeField("newyear = sad")
+	file = InjectField(file, field, "hallmark", false)
+
+	data := convertASTToBytes(file)
+	resultFile, err := os.CreateTemp("", "result")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer os.Remove(resultFile.Name())
+
+	writeBytesToFile(data, resultFile.Name())
+	resultBytes, err := ioutil.ReadFile(resultFile.Name())
+
+	expected := `orange = naranja
+red = rojo
+; This is a preamble
+
+[hallMaRk]
+christmas = merry
+newyear = sad
+
+[Rosaceae "subsection"]
+; Malus is a genus of small deciduous
+; trees in the Rosaceae family
+Malus domestica = Orchard apple
 `
 	expectedFile, err := os.CreateTemp("", "expected")
 	if err != nil {
