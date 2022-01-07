@@ -9,48 +9,7 @@ import (
 	"github.com/please-build/gcfg/ast"
 )
 
-// Read file into a file struct
-func readIntoStruct(file *os.File) ast.File {
-	var f ast.File
-	f.Name = file.Name()
-
-	ioreader, err := os.Open(f.Name)
-	if err != nil {
-		log.Fatal(err)
-	}
-	scanner := bufio.NewScanner(ioreader)
-
-	currentSection := ""
-	for scanner.Scan() {
-		line := scanner.Text()
-		if strings.Contains(line, "=") || line == "" || strings.HasPrefix(line, ";") || strings.HasPrefix(line, "#") {
-			// Append field to the current section
-			if currentSection == "" || currentSection == "_preamble" {
-				if len(f.Sections) == 0 {
-					// If we're in here, then we're picking up some preamble
-					// which could be blank lines, comments, or something else.
-					f.Sections = append(f.Sections, ast.MakeSection("[_preamble]"))
-					currentSection = "_preamble"
-				}
-			}
-			for i, s := range f.Sections {
-				if s.Key == currentSection {
-					f.Sections[i].Fields = append(f.Sections[i].Fields, ast.MakeField(line))
-				}
-			}
-			f.NumLines += 1
-		} else if line[0] == '[' && line[len(line)-1] == ']' {
-			f.Sections = append(f.Sections, ast.MakeSection(line))
-			currentSection = f.Sections[len(f.Sections)-1].Key
-			f.NumLines += 1
-		} else {
-			f.NumLines += 1
-		}
-	}
-
-	return f
-}
-
+// Inject a field into the ast
 func InjectField(f ast.File, field ast.Field, section string, repeatable bool) ast.File {
 	// Read the file so we know where to inject
 	sectionKey := ast.GetSectionKeyFromString(section)
@@ -102,6 +61,48 @@ func InjectField(f ast.File, field ast.Field, section string, repeatable bool) a
 	astSection := ast.MakeSection(header)
 	astSection.Fields = append(astSection.Fields, field)
 	f.Sections = append(f.Sections, astSection)
+
+	return f
+}
+
+// Read file into a file struct
+func readIntoStruct(file *os.File) ast.File {
+	var f ast.File
+	f.Name = file.Name()
+
+	ioreader, err := os.Open(f.Name)
+	if err != nil {
+		log.Fatal(err)
+	}
+	scanner := bufio.NewScanner(ioreader)
+
+	currentSection := ""
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.Contains(line, "=") || line == "" || strings.HasPrefix(line, ";") || strings.HasPrefix(line, "#") {
+			// Append field to the current section
+			if currentSection == "" || currentSection == "_preamble" {
+				if len(f.Sections) == 0 {
+					// If we're in here, then we're picking up some preamble
+					// which could be blank lines, comments, or something else.
+					f.Sections = append(f.Sections, ast.MakeSection("[_preamble]"))
+					currentSection = "_preamble"
+				}
+			}
+			for i, s := range f.Sections {
+				if s.Key == currentSection {
+					f.Sections[i].Fields = append(f.Sections[i].Fields, ast.MakeField(line))
+				}
+			}
+			f.NumLines += 1
+		} else if line[0] == '[' && line[len(line)-1] == ']' {
+			f.Sections = append(f.Sections, ast.MakeSection(line))
+			currentSection = f.Sections[len(f.Sections)-1].Key
+			f.NumLines += 1
+		} else {
+			f.NumLines += 1
+		}
+	}
 
 	return f
 }
