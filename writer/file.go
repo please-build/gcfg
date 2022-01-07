@@ -20,8 +20,6 @@ func readIntoStruct(file *os.File) ast.File {
 	}
 	scanner := bufio.NewScanner(ioreader)
 
-	//TODO: Check for duplicate sections and collapse/warn if found?
-
 	currentSection := ""
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -30,7 +28,7 @@ func readIntoStruct(file *os.File) ast.File {
 			if currentSection == "" || currentSection == "_preamble" {
 				if len(f.Sections) == 0 {
 					// If we're in here, then we're picking up some preamble
-					// which could be blank lines, or comments, or something else.
+					// which could be blank lines, comments, or something else.
 					f.Sections = append(f.Sections, ast.MakeSection("[_preamble]"))
 					currentSection = "_preamble"
 				}
@@ -109,7 +107,6 @@ func InjectField(f ast.File, field ast.Field, section string, repeatable bool) a
 }
 
 func convertASTToBytes(f ast.File) []byte {
-	// Turn AST into a list of bytes
 	var data []byte
 	for _, section := range f.Sections {
 		if section.Key != "_preamble" {
