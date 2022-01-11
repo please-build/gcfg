@@ -141,6 +141,7 @@ Malus prunifolia = Chinese crabapple
 	}
 	defer os.Remove("expected")
 
+	require.Equal(t, len(file.Sections[1].Fields), 3)
 	require.True(t, deepCompare("test", "expected"))
 }
 
