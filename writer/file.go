@@ -67,10 +67,6 @@ func InjectField(f ast.File, field ast.Field, section string, repeatable bool) a
 	return f
 }
 
-func readFile(file *os.File) ast.File {
-	return read(file, file.Name())
-}
-
 // Read file into a file struct
 func read(file io.Reader, name string) ast.File {
 	var f ast.File
