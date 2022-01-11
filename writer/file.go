@@ -2,8 +2,10 @@ package writer
 
 import (
 	"bufio"
+	"io"
 	"log"
 	"os"
+	"regexp"
 	"strings"
 
 	"github.com/please-build/gcfg/ast"
@@ -65,16 +67,15 @@ func InjectField(f ast.File, field ast.Field, section string, repeatable bool) a
 	return f
 }
 
-// Read file into a file struct
-func readIntoStruct(file *os.File) ast.File {
-	var f ast.File
-	f.Name = file.Name()
+func readFile(file *os.File) ast.File {
+	return read(file, file.Name())
+}
 
-	ioreader, err := os.Open(f.Name)
-	if err != nil {
-		log.Fatal(err)
-	}
-	scanner := bufio.NewScanner(ioreader)
+// Read file into a file struct
+func read(file io.Reader, name string) ast.File {
+	var f ast.File
+	f.Name = name
+	scanner := bufio.NewScanner(file)
 
 	currentSection := ""
 	for scanner.Scan() {
@@ -95,7 +96,9 @@ func readIntoStruct(file *os.File) ast.File {
 				}
 			}
 			f.NumLines += 1
-		} else if line[0] == '[' && line[len(line)-1] == ']' {
+		} else if matched, err := regexp.MatchString(`^ *\[.*\] *$`, line); err != nil {
+			log.Panicf("Error matching regexp: %v", err)
+		} else if matched {
 			f.Sections = append(f.Sections, ast.MakeSection(line))
 			currentSection = f.Sections[len(f.Sections)-1].Key
 			f.NumLines += 1
