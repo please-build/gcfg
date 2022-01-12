@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// A File is an AST representation of a config file
+// A File is an AST representation of a config file.
 type File struct {
 	Name     string
 	NumLines int
@@ -17,9 +17,8 @@ type Section struct {
 	// Section header as read from the config file
 	Header string
 	// Canonicalised key for identifying the section
-	Key               string
-	Fields            []Field
-	LeadingWhiteSpace int
+	Key    string
+	Fields []Field
 }
 
 type Field struct {
@@ -61,8 +60,8 @@ func MakeField(s string) Field {
 	}
 }
 
-// Strip brackets from section header and lower,
-// e.g. '[Something "sub"]' -> 'something "sub"'
+// GetSectionKeyFromString strips brackets from a section header and lowers it.
+// E.g. '[Something "sub"]' -> 'something "sub"'
 func GetSectionKeyFromString(s string) string {
 	n := strings.Count(s, "[")
 	n += strings.Count(s, "]")
@@ -78,8 +77,8 @@ func GetSectionKeyFromString(s string) string {
 	return stripped
 }
 
-// Return correctly formatted section header as
-// byte slice. Needed for writing to output file.
+// ToBytes returns correctly a formatted section header as a byte slice.
+// Needed for writing to output file.
 func (s Section) ToBytes() []byte {
 	if s.Key == "" {
 		log.Fatalf("Tried to convert an empty section to byte slice")
@@ -87,7 +86,7 @@ func (s Section) ToBytes() []byte {
 	return []byte(s.Header + "\n")
 }
 
-// Return a field as a byte slice. Needed for writing
+// ToBytes returns a field as a byte slice. Needed for writing
 // to output file.
 func (f Field) ToBytes() []byte {
 	if f.Comment != "" {
@@ -110,7 +109,7 @@ func (f Field) IsBlankLine() bool {
 		f.Value == ""
 }
 
-// Print an entire AST File to help with debugging
+// PrintDebug prints an entire AST File to help with debugging.
 func (f File) PrintDebug() {
 	log.Printf("Name: %v", f.Name)
 	log.Printf("Lines: %v", f.NumLines)
@@ -130,7 +129,7 @@ func (f File) PrintDebug() {
 }
 
 // MakeSectionHeader tries to form a textual section header
-// from a string which may or may not have brackets already
+// from a string which may or may not have brackets already.
 func MakeSectionHeader(s string) string {
 	n := strings.Count(s, "[")
 	n += strings.Count(s, "]")

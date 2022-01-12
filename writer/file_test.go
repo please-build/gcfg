@@ -59,7 +59,9 @@ Malus domestica = Orchard apple
 	// Read config into an ast.File
 	file := read(strings.NewReader(config), "test")
 	data := convertASTToBytes(file)
-	writeBytesToFile(data, file.Name)
+	if err := os.WriteFile(file.Name, []byte(data), 0644); err != nil {
+		t.Errorf("Error writing file to disk")
+	}
 	defer os.Remove(file.Name)
 
 	if err := os.WriteFile("expected", []byte(config), 0644); err != nil {
@@ -85,7 +87,9 @@ Malus domestica = Orchard apple
 	}
 	file = InjectField(file, field, "rosaceae", true)
 	data := convertASTToBytes(file)
-	writeBytesToFile(data, file.Name)
+	if err := os.WriteFile(file.Name, []byte(data), 0644); err != nil {
+		t.Errorf("Error writing file to disk")
+	}
 	defer os.Remove(file.Name)
 
 	expectedResult := `[hallMaRk]
@@ -123,7 +127,9 @@ Malus domestica = Orchard apple
 	}
 	file = InjectField(file, field, "rosaceae", true)
 	data := convertASTToBytes(file)
-	writeBytesToFile(data, file.Name)
+	if err := os.WriteFile(file.Name, []byte(data), 0644); err != nil {
+		t.Errorf("Error writing file to disk")
+	}
 	defer os.Remove(file.Name)
 
 	expectedResult := `[hallMaRk]
@@ -141,7 +147,7 @@ Malus prunifolia = Chinese crabapple
 	}
 	defer os.Remove("expected")
 
-	require.Equal(t, len(file.Sections[1].Fields), 3)
+	require.Equal(t, len(file.Sections[1].Fields), 4)
 	require.True(t, deepCompare("test", "expected"))
 }
 
@@ -166,7 +172,9 @@ Malus domestica = Orchard apple
 	}
 	file = InjectField(file, field, "rosaceae \"subsection\"", true)
 	data := convertASTToBytes(file)
-	writeBytesToFile(data, file.Name)
+	if err := os.WriteFile(file.Name, []byte(data), 0644); err != nil {
+		t.Errorf("Error writing file to disk")
+	}
 	defer os.Remove(file.Name)
 
 	expectedResult := `[hallMaRk]
@@ -256,7 +264,9 @@ Malus domestica = Orchard apple
 	field := ast.MakeField("e = mc2")
 	file = InjectField(file, field, "newSectION", true)
 	data := convertASTToBytes(file)
-	writeBytesToFile(data, file.Name)
+	if err := os.WriteFile(file.Name, []byte(data), 0644); err != nil {
+		t.Errorf("Error writing file to disk")
+	}
 	defer os.Remove(file.Name)
 
 	expected := `orange = naranja
@@ -301,7 +311,9 @@ Malus domestica = Orchard apple
 	field := ast.MakeField("newyear = sad")
 	file = InjectField(file, field, "hallmark", false)
 	data := convertASTToBytes(file)
-	writeBytesToFile(data, file.Name)
+	if err := os.WriteFile(file.Name, []byte(data), 0644); err != nil {
+		t.Errorf("Error writing file to disk")
+	}
 	defer os.Remove(file.Name)
 
 	expected := `orange = naranja

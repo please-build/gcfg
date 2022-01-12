@@ -4,14 +4,13 @@ import (
 	"bufio"
 	"io"
 	"log"
-	"os"
 	"regexp"
 	"strings"
 
 	"github.com/please-build/gcfg/ast"
 )
 
-// Inject a field into the ast
+// InjectField injects a field into the AST and returns the modified file.
 func InjectField(f ast.File, field ast.Field, section string, repeatable bool) ast.File {
 	// Read the file so we know where to inject
 	sectionKey := ast.GetSectionKeyFromString(section)
@@ -67,7 +66,7 @@ func InjectField(f ast.File, field ast.Field, section string, repeatable bool) a
 	return f
 }
 
-// Read file into a file struct
+// read reads a file into an ast.File struct.
 func read(file io.Reader, name string) ast.File {
 	var f ast.File
 	f.Name = name
@@ -106,6 +105,7 @@ func read(file io.Reader, name string) ast.File {
 	return f
 }
 
+// convertASTToBytes converts an AST file to a byte slice.
 func convertASTToBytes(f ast.File) []byte {
 	var data []byte
 	for _, section := range f.Sections {
@@ -118,11 +118,4 @@ func convertASTToBytes(f ast.File) []byte {
 	}
 
 	return data
-}
-
-func writeBytesToFile(data []byte, output string) {
-	err := os.WriteFile(output, data, 0644)
-	if err != nil {
-		log.Fatalf("Failed to write bytes to file: %v", err)
-	}
 }
