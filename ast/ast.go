@@ -77,7 +77,7 @@ func GetSectionKeyFromString(s string) string {
 	return stripped
 }
 
-// ToBytes returns correctly a formatted section header as a byte slice.
+// ToBytes returns a correctly formatted section header as a byte slice.
 // Needed for writing to output file.
 func (s Section) ToBytes() []byte {
 	if s.Key == "" {
