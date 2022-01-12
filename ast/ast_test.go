@@ -1,4 +1,4 @@
-package writer
+package ast
 
 import (
 	"bytes"
@@ -8,7 +8,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/please-build/gcfg/ast"
 	"github.com/stretchr/testify/require"
 )
 
@@ -16,7 +15,7 @@ func TestGetSectionKey(t *testing.T) {
 	config := `[FOObar]
 bar = value1
 `
-	file := read(strings.NewReader(config), "test")
+	file := Read(strings.NewReader(config), "test")
 	require.Equal(t, file.Sections[0].Key, "foobar")
 }
 
@@ -28,10 +27,10 @@ newyear = happy
 [Rosaceae]
 Malus domestica = Orchard apple
 `
-	file := read(strings.NewReader(config), "test")
+	file := Read(strings.NewReader(config), "test")
 	require.Equal(t, file.NumLines, 6)
 
-	field := ast.Field{
+	field := Field{
 		Key:   "Malus prunifolia",
 		Value: "Chinese crabapple",
 	}
@@ -57,11 +56,8 @@ newyear = happy
 Malus domestica = Orchard apple
 `
 	// Read config into an ast.File
-	file := read(strings.NewReader(config), "test")
-	data := convertASTToBytes(file)
-	if err := os.WriteFile(file.Name, []byte(data), 0644); err != nil {
-		t.Errorf("Error writing file to disk")
-	}
+	file := Read(strings.NewReader(config), "test")
+	Write(file, file.Name)
 	defer os.Remove(file.Name)
 
 	if err := os.WriteFile("expected", []byte(config), 0644); err != nil {
@@ -80,16 +76,13 @@ newyear = happy
 [Rosaceae]
 Malus domestica = Orchard apple
 `
-	file := read(strings.NewReader(config), "test")
-	field := ast.Field{
+	file := Read(strings.NewReader(config), "test")
+	field := Field{
 		Key:   "Malus prunifolia",
 		Value: "Chinese crabapple",
 	}
 	file = InjectField(file, field, "rosaceae", true)
-	data := convertASTToBytes(file)
-	if err := os.WriteFile(file.Name, []byte(data), 0644); err != nil {
-		t.Errorf("Error writing file to disk")
-	}
+	Write(file, file.Name)
 	defer os.Remove(file.Name)
 
 	expectedResult := `[hallMaRk]
@@ -118,18 +111,15 @@ newyear = happy
 ; trees in the Rosaceae family
 Malus domestica = Orchard apple
 `
-	file := read(strings.NewReader(config), "test")
+	file := Read(strings.NewReader(config), "test")
 	require.Equal(t, len(file.Sections[1].Fields), 3)
 
-	field := ast.Field{
+	field := Field{
 		Key:   "Malus prunifolia",
 		Value: "Chinese crabapple",
 	}
 	file = InjectField(file, field, "rosaceae", true)
-	data := convertASTToBytes(file)
-	if err := os.WriteFile(file.Name, []byte(data), 0644); err != nil {
-		t.Errorf("Error writing file to disk")
-	}
+	Write(file, file.Name)
 	defer os.Remove(file.Name)
 
 	expectedResult := `[hallMaRk]
@@ -161,20 +151,17 @@ newyear = happy
 ; trees in the Rosaceae family
 Malus domestica = Orchard apple
 `
-	file := read(strings.NewReader(config), "test")
+	file := Read(strings.NewReader(config), "test")
 	require.Equal(t, len(file.Sections), 2)
 	require.Equal(t, file.Sections[1].Key, "rosaceae \"subsection\"")
 	require.Equal(t, file.Sections[1].Header, "[Rosaceae \"subsection\"]")
 
-	field := ast.Field{
+	field := Field{
 		Key:   "Malus prunifolia",
 		Value: "Chinese crabapple",
 	}
 	file = InjectField(file, field, "rosaceae \"subsection\"", true)
-	data := convertASTToBytes(file)
-	if err := os.WriteFile(file.Name, []byte(data), 0644); err != nil {
-		t.Errorf("Error writing file to disk")
-	}
+	Write(file, file.Name)
 	defer os.Remove(file.Name)
 
 	expectedResult := `[hallMaRk]
@@ -209,8 +196,7 @@ newyear = happy
 ; trees in the Rosaceae family
 Malus domestica = Orchard apple
 `
-	file := read(strings.NewReader(config), "test")
-
+	file := Read(strings.NewReader(config), "test")
 	require.Equal(t, len(file.Sections), 3)
 	require.Equal(t, file.Sections[0].Key, "_preamble")
 	require.Equal(t, len(file.Sections[0].Fields), 4)
@@ -236,13 +222,13 @@ christmas = merry
 [anotherSeCTion]
 field = value
 `
-	file := read(strings.NewReader(config), "test")
+	file := Read(strings.NewReader(config), "test")
 	require.Equal(t, file.NumLines, 3)
 
-	file = read(strings.NewReader(config1), "test")
+	file = Read(strings.NewReader(config1), "test")
 	require.Equal(t, file.NumLines, 4)
 
-	file = read(strings.NewReader(config2), "test")
+	file = Read(strings.NewReader(config2), "test")
 	require.Equal(t, file.NumLines, 8)
 }
 
@@ -260,13 +246,10 @@ newyear = happy
 ; trees in the Rosaceae family
 Malus domestica = Orchard apple
 `
-	file := read(strings.NewReader(config), "test")
-	field := ast.MakeField("e = mc2")
+	file := Read(strings.NewReader(config), "test")
+	field := MakeField("e = mc2")
 	file = InjectField(file, field, "newSectION", true)
-	data := convertASTToBytes(file)
-	if err := os.WriteFile(file.Name, []byte(data), 0644); err != nil {
-		t.Errorf("Error writing file to disk")
-	}
+	Write(file, file.Name)
 	defer os.Remove(file.Name)
 
 	expected := `orange = naranja
@@ -307,13 +290,10 @@ newyear = happy
 ; trees in the Rosaceae family
 Malus domestica = Orchard apple
 `
-	file := read(strings.NewReader(config), "test")
-	field := ast.MakeField("newyear = sad")
+	file := Read(strings.NewReader(config), "test")
+	field := MakeField("newyear = sad")
 	file = InjectField(file, field, "hallmark", false)
-	data := convertASTToBytes(file)
-	if err := os.WriteFile(file.Name, []byte(data), 0644); err != nil {
-		t.Errorf("Error writing file to disk")
-	}
+	Write(file, file.Name)
 	defer os.Remove(file.Name)
 
 	expected := `orange = naranja
@@ -349,8 +329,7 @@ func TestFileIsNotModified(t *testing.T) {
 Value =    blah
 
 `
-	file := read(strings.NewReader(config), "test")
-
+	file := Read(strings.NewReader(config), "test")
 	require.Equal(t, len(file.Sections[0].Fields), 2)
 	require.Equal(t, len(file.Sections), 2)
 	require.Equal(t, file.Sections[1].Header, "[Section \"blah\"  ]   ")
