@@ -9,7 +9,6 @@ import (
 // A File is an AST representation of a config file.
 type File struct {
 	Name     string
-	NumLines int
 	Sections []Section
 }
 
@@ -30,24 +29,20 @@ type Field struct {
 	Comment string
 }
 
-func MakeSection(header string) Section {
+func makeSection(header string) Section {
 	return Section{
 		Header: header,
 		Key:    GetSectionKeyFromString(header),
 	}
 }
 
-func MakeField(s string) Field {
+func makeField(s string) Field {
 	if s == "" {
 		// A field can be a blank line
 		return Field{}
 	} else if strings.HasPrefix(s, ";") || strings.HasPrefix(s, "#") {
 		// or a comment
-		return Field{
-			Key:     "",
-			Value:   "",
-			Comment: s,
-		}
+		return Field{Comment: s}
 	}
 
 	split := strings.Split(s, "=")
@@ -112,7 +107,7 @@ func (f Field) IsBlankLine() bool {
 // PrintDebug prints an entire AST File to help with debugging.
 func (f File) PrintDebug() {
 	log.Printf("Name: %v", f.Name)
-	log.Printf("Lines: %v", f.NumLines)
+	log.Printf("Lines: %v", f.numLines())
 	log.Printf("Contents:")
 	for _, s := range f.Sections {
 		log.Printf("%v", s.Header)
@@ -130,7 +125,7 @@ func (f File) PrintDebug() {
 
 // MakeSectionHeader tries to form a textual section header
 // from a string which may or may not have brackets already.
-func MakeSectionHeader(s string) string {
+func makeSectionHeader(s string) string {
 	n := strings.Count(s, "[")
 	n += strings.Count(s, "]")
 
@@ -149,4 +144,21 @@ func MakeSectionHeader(s string) string {
 	}
 
 	return "[" + s + "]"
+}
+
+func (s Section) numLines() int {
+	if s.Key == "_preamble" {
+		return len(s.Fields)
+	}
+
+	// If this is a real section, include the section header in the line total
+	return len(s.Fields) + 1
+}
+
+func (f File) numLines() int {
+	ret := 0
+	for _, s := range f.Sections {
+		ret += s.numLines()
+	}
+	return ret
 }

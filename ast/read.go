@@ -23,24 +23,20 @@ func Read(file io.Reader, name string) File {
 				if len(f.Sections) == 0 {
 					// If we're in here, then we're picking up some preamble
 					// which could be blank lines, comments, or something else.
-					f.Sections = append(f.Sections, MakeSection("[_preamble]"))
+					f.Sections = append(f.Sections, makeSection("[_preamble]"))
 					currentSection = "_preamble"
 				}
 			}
 			for i, s := range f.Sections {
 				if s.Key == currentSection {
-					f.Sections[i].Fields = append(f.Sections[i].Fields, MakeField(line))
+					f.Sections[i].Fields = append(f.Sections[i].Fields, makeField(line))
 				}
 			}
-			f.NumLines += 1
 		} else if matched, err := regexp.MatchString(`^ *\[.*\] *$`, line); err != nil {
 			log.Panicf("Error matching regexp: %v", err)
 		} else if matched {
-			f.Sections = append(f.Sections, MakeSection(line))
+			f.Sections = append(f.Sections, makeSection(line))
 			currentSection = f.Sections[len(f.Sections)-1].Key
-			f.NumLines += 1
-		} else {
-			f.NumLines += 1
 		}
 	}
 

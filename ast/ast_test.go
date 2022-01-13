@@ -28,7 +28,7 @@ newyear = happy
 Malus domestica = Orchard apple
 `
 	file := Read(strings.NewReader(config), "test")
-	require.Equal(t, file.NumLines, 6)
+	require.Equal(t, file.numLines(), 6)
 
 	field := Field{
 		Key:   "Malus prunifolia",
@@ -36,7 +36,7 @@ Malus domestica = Orchard apple
 	}
 	file = InjectField(file, field, "rosaceae", true)
 
-	require.Equal(t, file.NumLines, 7)
+	require.Equal(t, file.numLines(), 7)
 	require.Equal(t, len(file.Sections), 2)
 	require.Equal(t, file.Sections[0].Key, "hallmark")
 	require.Equal(t, file.Sections[1].Key, "rosaceae")
@@ -200,7 +200,7 @@ Malus domestica = Orchard apple
 	require.Equal(t, len(file.Sections), 3)
 	require.Equal(t, file.Sections[0].Key, "_preamble")
 	require.Equal(t, len(file.Sections[0].Fields), 4)
-	require.Equal(t, file.NumLines, 12)
+	require.Equal(t, file.numLines(), 12)
 }
 
 func TestLineCounts(t *testing.T) {
@@ -223,13 +223,13 @@ christmas = merry
 field = value
 `
 	file := Read(strings.NewReader(config), "test")
-	require.Equal(t, file.NumLines, 3)
+	require.Equal(t, file.numLines(), 3)
 
 	file = Read(strings.NewReader(config1), "test")
-	require.Equal(t, file.NumLines, 4)
+	require.Equal(t, file.numLines(), 4)
 
 	file = Read(strings.NewReader(config2), "test")
-	require.Equal(t, file.NumLines, 8)
+	require.Equal(t, file.numLines(), 8)
 }
 
 func TestInjectIntoNewSection(t *testing.T) {
@@ -247,7 +247,7 @@ newyear = happy
 Malus domestica = Orchard apple
 `
 	file := Read(strings.NewReader(config), "test")
-	field := MakeField("e = mc2")
+	field := makeField("e = mc2")
 	file = InjectField(file, field, "newSectION", true)
 	Write(file, file.Name)
 	defer os.Remove(file.Name)
@@ -291,7 +291,7 @@ newyear = happy
 Malus domestica = Orchard apple
 `
 	file := Read(strings.NewReader(config), "test")
-	field := MakeField("newyear = sad")
+	field := makeField("newyear = sad")
 	file = InjectField(file, field, "hallmark", false)
 	Write(file, file.Name)
 	defer os.Remove(file.Name)
@@ -334,6 +334,39 @@ Value =    blah
 	require.Equal(t, len(file.Sections), 2)
 	require.Equal(t, file.Sections[1].Header, "[Section \"blah\"  ]   ")
 	require.Equal(t, config, string(convertASTToBytes(file)))
+}
+
+func TestDeleteSection(t *testing.T) {
+	config := `[foo]
+; a comment
+key =   value   
+[bar]
+
+[baz]
+; keep this bit
+keep = true
+
+
+
+[foo]
+# this and the first section should be deleted
+`
+	file := Read(strings.NewReader(config), "test")
+	require.Equal(t, 4, len(file.Sections))
+
+	file = DeleteSection(file, "foo")
+	require.Equal(t, 2, len(file.Sections))
+
+	expected := `[bar]
+
+[baz]
+; keep this bit
+keep = true
+
+
+
+`
+	require.Equal(t, expected, string(convertASTToBytes(file)))
 }
 
 const chunkSize = 64000
