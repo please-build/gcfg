@@ -304,11 +304,7 @@ Malus domestica = Orchard apple
 	value := "sad"
 	section := "hallmark"
 	subsection := ""
-	file.PrintDebug()
 	file = InjectField(file, key, value, section, subsection, false)
-	log.Printf("file.sections[1].fields[1].key=%v", file.sections[1].fields[1].key)
-	log.Printf("file.sections[1].fields[1].value=%v", file.sections[1].fields[1].value)
-	file.PrintDebug()
 	Write(file, file.name)
 	defer os.Remove(file.name)
 

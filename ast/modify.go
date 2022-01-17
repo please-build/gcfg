@@ -1,7 +1,6 @@
 package ast
 
 import (
-	"log"
 	"strings"
 )
 
@@ -24,18 +23,12 @@ func InjectField(f File, key, value, section, subsection string, repeatable bool
 
 	// If section exists, add field to section
 	for i, s := range f.sections {
-		log.Printf("s.key=%v\tsectionKey=%v", s.key, sectionKey)
 		if s.key == sectionKey {
-			log.Printf("section match")
 			if !repeatable {
-				log.Printf("Look for field")
 				for j, k := range s.fields {
-					log.Printf("k.key='%v'\tfi.key='%v'", k.key, fi.key)
 					if k.key == fi.key || strings.TrimSpace(k.key) == fi.key {
-						log.Printf("Setting %v to %v", f.sections[i].fields[j].value, fi.value)
 						f.sections[i].fields[j].value = fi.value
 						f.sections[i].fields[j].str = k.key + "= " + fi.value
-						log.Printf("f.sections[i].fields[j].value is now %v", f.sections[i].fields[j].value)
 						return f
 					}
 				}

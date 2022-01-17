@@ -36,7 +36,6 @@ func Read(file io.Reader, name string) File {
 			log.Panicf("Error matching regexp: %v", err)
 		} else if matched {
 			// Matched a section title
-			log.Printf("Matched a section title %v", line)
 			f.sections = append(f.sections, makeSectionFromString(line))
 			currentSection = f.sections[len(f.sections)-1].key
 		}

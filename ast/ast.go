@@ -35,6 +35,8 @@ type field struct {
 	comment string
 }
 
+// makeSection initialises a section in the ast given a section
+// and a subsection
 func makeSection(sect, subsection string) section {
 	s := section{
 		name:       sect,
@@ -50,10 +52,12 @@ func makeSection(sect, subsection string) section {
 	return s
 }
 
+// makeField initialises an ast field given a key and a value
 func makeField(key, value string) field {
 	return field{key: key, value: value}
 }
 
+// getStr returns the string associated with a field
 func (f field) getStr() string {
 	if f.str != "" {
 		return f.str
@@ -62,7 +66,8 @@ func (f field) getStr() string {
 	return f.key + " = " + f.value
 }
 
-func (s section) getSectionStr() string {
+// getStr returns the string associated with a section
+func (s section) getStr() string {
 	if s.str != "" {
 		return s.str
 	}
@@ -72,16 +77,15 @@ func (s section) getSectionStr() string {
 	return "[" + s.name + "]"
 }
 
+// makeSectionKey creates a key for identifying a section
 func makeSectionKey(sect, subsection string) string {
-	log.Printf("Making section key with sect=%v and subsection=%v", sect, subsection)
 	if subsection == "" {
-		log.Printf("No subsection so return %v", strings.ToLower(sect))
 		return strings.ToLower(sect)
 	}
-	log.Printf("Yes subsection so return %v", strings.ToLower(sect)+"&"+strings.ToLower(subsection))
 	return strings.ToLower(sect) + "&" + strings.ToLower(subsection)
 }
 
+// makeSectionFromString takes a string read from a config file and returns an ast section
 func makeSectionFromString(str string) section {
 	s := section{str: str}
 	// Check first if str has a
@@ -98,14 +102,12 @@ func makeSectionFromString(str string) section {
 		sectionReg := regexp.MustCompile(`(?:\[ *)([a-zA-Z0-9_.-]+)(?: *\])`)
 		s.name = sectionReg.FindStringSubmatch(str)[1]
 		s.key = makeSectionKey(s.name, "")
-	} else {
-
 	}
 
 	return s
 }
 
-//TODO: comment
+// makeFieldFromString takes a string read from a config file and returns an ast field
 func makeFieldFromString(s string) field {
 	if s == "" {
 		// A field can be a blank line
@@ -123,7 +125,6 @@ func makeFieldFromString(s string) field {
 
 	ret.key = keyValueReg.FindStringSubmatch(s)[1]
 	ret.value = keyValueReg.FindStringSubmatch(s)[3]
-	log.Printf("Set field key='%v', value='%v'", ret.key, ret.value)
 
 	return ret
 }
@@ -137,29 +138,14 @@ func getKeyFromSectionAndSubsection(sect, subsection string) string {
 	return strings.ToLower(sect) + "&" + strings.ToLower(subsection)
 }
 
-// func getSectionKeyFromString(s string)
-// 	n := strings.Count(s, "[")
-// 	n += strings.Count(s, "]")
-// 	if n == 0 {
-// 		return strings.ToLower(s)
-// 	}
-// 	if n != 2 {
-// 		log.Fatalf("Invalid section header: %v", s)
-// 	}
-// 	stripped := strings.Replace(s, "[", "", -1)
-// 	stripped = strings.Replace(stripped, "]", "", -1)
-// 	stripped = strings.ToLower(stripped)
-// 	return stripped
-// }
-
 // ToBytes returns a correctly formatted section header as a byte slice.
 // Needed for writing to output file.
 func (s section) toBytes() []byte {
 	if s.key == "" {
 		log.Fatalf("Tried to convert an empty section to byte slice")
 	}
-	log.Printf("Writing section to file '%v'", s.str)
-	return []byte(s.str + "\n")
+	str := s.getStr()
+	return []byte(str + "\n")
 }
 
 // ToBytes returns a field as a byte slice. Needed for writing
@@ -179,6 +165,7 @@ func (f field) toBytes() []byte {
 	return []byte(s)
 }
 
+// isBlankLine returns whether f is a field representing a blank line
 func (f field) isBlankLine() bool {
 	return f.comment == "" &&
 		f.key == "" &&
@@ -223,15 +210,16 @@ func makeSectionHeader(s string) string {
 	return "[" + s + "]"
 }
 
+// numLines returns the number of lines in the section including the section title
 func (s section) numLines() int {
 	if s.key == "_preamble" {
 		return len(s.fields)
 	}
 
-	// If this is a real section, include the section header in the line total
 	return len(s.fields) + 1
 }
 
+// numLines sums all section line counts and returns the number of lines in the file
 func (f File) numLines() int {
 	ret := 0
 	for _, s := range f.sections {
