@@ -11,7 +11,7 @@ import (
 // Read reads a file into an ast.File struct.
 func Read(file io.Reader, name string) File {
 	var f File
-	f.Name = name
+	f.name = name
 	scanner := bufio.NewScanner(file)
 
 	currentSection := ""
@@ -20,23 +20,25 @@ func Read(file io.Reader, name string) File {
 		if strings.Contains(line, "=") || line == "" || strings.HasPrefix(line, ";") || strings.HasPrefix(line, "#") {
 			// Append field to the current section
 			if currentSection == "" || currentSection == "_preamble" {
-				if len(f.Sections) == 0 {
+				if len(f.sections) == 0 {
 					// If we're in here, then we're picking up some preamble
 					// which could be blank lines, comments, or something else.
-					f.Sections = append(f.Sections, makeSection("[_preamble]"))
+					f.sections = append(f.sections, makeSection("_preamble", ""))
 					currentSection = "_preamble"
 				}
 			}
-			for i, s := range f.Sections {
-				if s.Key == currentSection {
-					f.Sections[i].Fields = append(f.Sections[i].Fields, makeField(line))
+			for i, s := range f.sections {
+				if s.key == currentSection {
+					f.sections[i].fields = append(f.sections[i].fields, makeFieldFromString(line))
 				}
 			}
 		} else if matched, err := regexp.MatchString(`^ *\[.*\] *$`, line); err != nil {
 			log.Panicf("Error matching regexp: %v", err)
 		} else if matched {
-			f.Sections = append(f.Sections, makeSection(line))
-			currentSection = f.Sections[len(f.Sections)-1].Key
+			// Matched a section title
+			log.Printf("Matched a section title %v", line)
+			f.sections = append(f.sections, makeSectionFromString(line))
+			currentSection = f.sections[len(f.sections)-1].key
 		}
 	}
 

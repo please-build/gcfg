@@ -1,41 +1,46 @@
 package ast
 
 import (
+	"log"
 	"strings"
 )
 
 // InjectField injects a field into the AST and returns the modified file.
 // If multiple sections exist with the same name, we insert into the first
 // one we find.
-func InjectField(f File, field Field, section string, repeatable bool) File {
+func InjectField(f File, key, value, section, subsection string, repeatable bool) File {
 	// Work out which section we want to inject into
-	sectionKey := GetSectionKeyFromString(section)
+	sectionKey := getKeyFromSectionAndSubsection(section, subsection)
 
-	// Format field correctly for injection
-	if !(strings.HasSuffix(field.Key, " ")) {
-		field.Key += " "
-	}
-	if !(strings.HasPrefix(field.Value, " ")) {
-		field.Value = " " + field.Value
-	}
+	fi := makeField(key, value)
 
 	// If file is empty, we can insert the section and field without any further checks
-	if len(f.Sections) == 0 {
-		return appendFieldToNewSection(f, field, section)
+	if len(f.sections) == 0 {
+		s := makeSection(section, subsection)
+		s.fields = append(s.fields, makeField(key, value))
+		f.sections = append(f.sections, s)
+		return f
 	}
 
 	// If section exists, add field to section
-	for i, s := range f.Sections {
-		if s.Key == sectionKey {
+	for i, s := range f.sections {
+		log.Printf("s.key=%v\tsectionKey=%v", s.key, sectionKey)
+		if s.key == sectionKey {
+			log.Printf("section match")
 			if !repeatable {
-				for j, k := range s.Fields {
-					if k.Key == field.Key {
-						f.Sections[i].Fields[j].Value = field.Value
+				log.Printf("Look for field")
+				for j, k := range s.fields {
+					log.Printf("k.key='%v'\tfi.key='%v'", k.key, fi.key)
+					if k.key == fi.key || strings.TrimSpace(k.key) == fi.key {
+						log.Printf("Setting %v to %v", f.sections[i].fields[j].value, fi.value)
+						f.sections[i].fields[j].value = fi.value
+						f.sections[i].fields[j].str = k.key + "= " + fi.value
+						log.Printf("f.sections[i].fields[j].value is now %v", f.sections[i].fields[j].value)
 						return f
 					}
 				}
 			}
-			f.Sections[i].Fields = append(f.Sections[i].Fields, field)
+			f.sections[i].fields = append(f.sections[i].fields, fi)
 			return f
 		}
 	}
@@ -43,44 +48,36 @@ func InjectField(f File, field Field, section string, repeatable bool) File {
 	// Couldn't find section so create new one
 	// Check if file currently ends with a blank line first
 	needToAppendSpace := true
-	lastSection := &f.Sections[len(f.Sections)-1]
-	if len(lastSection.Fields) > 0 {
-		lastField := &lastSection.Fields[len(lastSection.Fields)-1]
-		if lastField.IsBlankLine() {
+	lastSection := &f.sections[len(f.sections)-1]
+	if len(lastSection.fields) > 0 {
+		lastField := &lastSection.fields[len(lastSection.fields)-1]
+		if lastField.isBlankLine() {
 			needToAppendSpace = false
 		}
 	}
 
 	if needToAppendSpace {
-		f.Sections[len(f.Sections)-1].Fields = append(f.Sections[len(f.Sections)-1].Fields, Field{})
+		f.sections[len(f.sections)-1].fields = append(f.sections[len(f.sections)-1].fields, field{})
 	}
 
-	return appendFieldToNewSection(f, field, section)
-}
-
-// appendFieldToNewSection appends a field to a new section and adds that section
-// to the AST
-func appendFieldToNewSection(f File, field Field, section string) File {
-	header := makeSectionHeader(section)
-	astSection := makeSection(header)
-	astSection.Fields = append(astSection.Fields, field)
-	f.Sections = append(f.Sections, astSection)
-
+	s := makeSection(section, subsection)
+	s.fields = append(s.fields, makeField(key, value))
+	f.sections = append(f.sections, s)
 	return f
 }
 
 // DeleteSection deletes all sections found in the AST with the name sect
-func DeleteSection(file File, sect string) File {
+func DeleteSection(file File, sect, subsection string) File {
 	// Work out which section we want to delete
-	sectionKey := GetSectionKeyFromString(sect)
+	s := makeSection(sect, subsection)
 
-	for i := 0; i < len(file.Sections); i++ {
-		if file.Sections[i].Key == sectionKey {
-			if len(file.Sections) > i+1 {
-				file.Sections = append(file.Sections[:i], file.Sections[i+1:]...)
+	for i := 0; i < len(file.sections); i++ {
+		if file.sections[i].key == s.key {
+			if len(file.sections) > i+1 {
+				file.sections = append(file.sections[:i], file.sections[i+1:]...)
 				i--
 			} else {
-				file.Sections = file.Sections[:i]
+				file.sections = file.sections[:i]
 			}
 
 		}
