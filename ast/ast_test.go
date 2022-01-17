@@ -366,11 +366,16 @@ keep = true
 
 [foo]
 # this and the first section should be deleted
+
+[section "withsubsection"]
+; stuff
+stuff = stuff
 `
 	file := Read(strings.NewReader(config), "test")
-	require.Equal(t, 4, len(file.sections))
+	require.Equal(t, 5, len(file.sections))
 
 	file = DeleteSection(file, "foo", "")
+	file = DeleteSection(file, "section", "withsubsection")
 	require.Equal(t, 2, len(file.sections))
 
 	expected := `[bar]
