@@ -34,28 +34,6 @@ type Field struct {
 	CommentsBefore  []*Comment // Any comments or whitespace between this field and whatever came before
 }
 
-// makeSection initialises a section in the ast given a section
-// and a subsection
-func makeSection(sect, subsection string) Section {
-	s := Section{
-		Name:       sect,
-		Subsection: subsection,
-		Key:        makeSectionKey(sect, subsection)}
-
-	if subsection == "" {
-		s.HeadingStr = "[" + sect + "]"
-	} else {
-		s.HeadingStr = "[" + sect + " \"" + subsection + "\"]"
-	}
-
-	return s
-}
-
-// makeField initialises an ast field given a key and a value
-func makeField(key, value string) Field {
-	return Field{Name: key, Value: value}
-}
-
 // getStr returns the string associated with a field
 func (f Field) getStr() string {
 	if f.Str != "" {
@@ -82,44 +60,6 @@ func makeSectionKey(name, subsection string) string {
 		return strings.ToLower(name)
 	}
 	return strings.ToLower(name) + "&" + strings.ToLower(subsection)
-}
-
-// getSectionKeyFromString strips brackets from a section header and lowers it.
-// E.g. '[Something "sub"]' -> 'something "sub"'
-func getKeyFromSectionAndSubsection(sect, subsection string) string {
-	if subsection == "" {
-		return strings.ToLower(sect)
-	}
-	return strings.ToLower(sect) + "&" + strings.ToLower(subsection)
-}
-
-// toBytes returns a correctly formatted section header as a byte slice.
-// Needed for writing to output file.
-func (s Section) toBytes() []byte {
-	if s.Name == "" {
-		log.Fatalf("Tried to convert an empty section to byte slice")
-	}
-	var ret string
-	for _, c := range s.CommentsBefore {
-		ret += c.Str + "\n"
-	}
-	ret += s.getHeadingStr() + "\n"
-	return []byte(ret)
-}
-
-// toBytes returns a field as a byte slice. Needed for writing
-// to output file.
-func (f Field) toBytes() []byte {
-	var ret string
-	for _, c := range f.CommentsBefore {
-		ret += c.Str + "\n"
-	}
-	ret += f.getStr() + "\n"
-	return []byte(ret)
-}
-
-func (c Comment) toBytes() []byte {
-	return []byte(c.Str + "\n")
 }
 
 // printDebug prints an entire AST File to help with debugging.

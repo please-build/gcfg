@@ -1,6 +1,7 @@
 package ast
 
 import (
+	"log"
 	"os"
 )
 
@@ -30,4 +31,33 @@ func convertASTToBytes(f File) []byte {
 	}
 
 	return data
+}
+
+// toBytes returns a correctly formatted section header as a byte slice.
+// Needed for writing to output file.
+func (s Section) toBytes() []byte {
+	if s.Name == "" {
+		log.Fatalf("Tried to convert an empty section to byte slice")
+	}
+	var ret string
+	for _, c := range s.CommentsBefore {
+		ret += c.Str + "\n"
+	}
+	ret += s.getHeadingStr() + "\n"
+	return []byte(ret)
+}
+
+// toBytes returns a field as a byte slice. Needed for writing
+// to output file.
+func (f Field) toBytes() []byte {
+	var ret string
+	for _, c := range f.CommentsBefore {
+		ret += c.Str + "\n"
+	}
+	ret += f.getStr() + "\n"
+	return []byte(ret)
+}
+
+func (c Comment) toBytes() []byte {
+	return []byte(c.Str + "\n")
 }

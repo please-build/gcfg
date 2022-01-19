@@ -76,3 +76,34 @@ func DeleteSection(file File, sect, subsection string) File {
 	}
 	return file
 }
+
+// makeSection initialises a section in the ast given a section
+// and a subsection
+func makeSection(sect, subsection string) Section {
+	s := Section{
+		Name:       sect,
+		Subsection: subsection,
+		Key:        makeSectionKey(sect, subsection)}
+
+	if subsection == "" {
+		s.HeadingStr = "[" + sect + "]"
+	} else {
+		s.HeadingStr = "[" + sect + " \"" + subsection + "\"]"
+	}
+
+	return s
+}
+
+// makeField initialises an ast field given a key and a value
+func makeField(key, value string) Field {
+	return Field{Name: key, Value: value}
+}
+
+// getSectionKeyFromString strips brackets from a section header and lowers it.
+// E.g. '[Something "sub"]' -> 'something&sub'
+func getKeyFromSectionAndSubsection(sect, subsection string) string {
+	if subsection == "" {
+		return strings.ToLower(sect)
+	}
+	return strings.ToLower(sect) + "&" + strings.ToLower(subsection)
+}
