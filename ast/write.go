@@ -16,13 +16,17 @@ func Write(f File, output string) error {
 // convertASTToBytes converts an AST file to a byte slice.
 func convertASTToBytes(f File) []byte {
 	var data []byte
-	for _, section := range f.sections {
-		if section.key != "_preamble" {
-			data = append(data, section.toBytes()...)
-		}
-		for _, field := range section.fields {
+	for _, field := range f.Fields {
+		data = append(data, field.toBytes()...)
+	}
+	for _, section := range f.Sections {
+		data = append(data, section.toBytes()...)
+		for _, field := range section.Fields {
 			data = append(data, field.toBytes()...)
 		}
+	}
+	for _, comment := range f.CommentsAfter {
+		data = append(data, comment.toBytes()...)
 	}
 
 	return data

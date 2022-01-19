@@ -15,8 +15,8 @@ func TestGetSectionKey(t *testing.T) {
 	config := `[FOObar]
 bar = value1
 `
-	file := Read(strings.NewReader(config), "test")
-	require.Equal(t, "foobar", file.sections[0].key)
+	file := Read(strings.NewReader(config))
+	require.Equal(t, "foobar", file.Sections[0].Key)
 }
 
 func TestInjectFieldIntoAST(t *testing.T) {
@@ -27,25 +27,28 @@ newyear = happy
 [Rosaceae]
 Malus domestica = Orchard apple
 `
-	file := Read(strings.NewReader(config), "test")
+	file := Read(strings.NewReader(config))
+	require.Equal(t, "hallmark", file.Sections[0].Name)
+	require.Equal(t, 2, file.Sections[0].numFields())
+	require.Equal(t, 1, file.Sections[1].numFields())
 	require.Equal(t, 6, file.numLines())
 
 	key := "Malus prunifolia"
 	value := "Chinese crabapple"
 	section := "rosaceae"
 
-	file.PrintDebug()
 	file = InjectField(file, key, value, section, "", true)
-	file.PrintDebug()
 
 	require.Equal(t, 7, file.numLines())
-	require.Equal(t, 2, len(file.sections))
-	require.Equal(t, "hallmark", file.sections[0].key)
-	require.Equal(t, "rosaceae", file.sections[1].key)
-	require.Equal(t, 3, len(file.sections[0].fields))
-	require.Equal(t, 2, len(file.sections[1].fields))
-	require.Equal(t, key, file.sections[1].fields[1].key)
-	require.Equal(t, value, file.sections[1].fields[1].value)
+	require.Equal(t, 2, len(file.Sections))
+	require.Equal(t, "hallmark", file.Sections[0].Key)
+	require.Equal(t, "rosaceae", file.Sections[1].Key)
+	require.Equal(t, 2, len(file.Sections[0].Fields))
+	require.Equal(t, 2, len(file.Sections[1].Fields))
+	require.Equal(t, 0, len(file.Sections[0].CommentsBefore))
+	require.Equal(t, 1, len(file.Sections[1].CommentsBefore))
+	require.Equal(t, key, file.Sections[1].Fields[1].Name)
+	require.Equal(t, value, file.Sections[1].Fields[1].Value)
 }
 
 func TestWriteASTToFile(t *testing.T) {
@@ -58,16 +61,16 @@ newyear = happy
 Malus domestica = Orchard apple
 `
 	// Read config into an ast.File
-	file := Read(strings.NewReader(config), "test")
-	Write(file, file.name)
-	defer os.Remove(file.name)
+	file := Read(strings.NewReader(config))
+	Write(file, "actual")
+	defer os.Remove("actual")
 
 	if err := os.WriteFile("expected", []byte(config), 0644); err != nil {
 		t.Errorf("Error writing file to disk")
 	}
 	defer os.Remove("expected")
 
-	require.True(t, deepCompare("test", "expected"), string(convertASTToBytes(file)))
+	require.True(t, deepCompare("actual", "expected"), string(convertASTToBytes(file)))
 }
 
 func TestReadInjectWrite(t *testing.T) {
@@ -78,19 +81,19 @@ newyear = happy
 [Rosaceae]
 Malus domestica = Orchard apple
 `
-	file := Read(strings.NewReader(config), "test")
-	require.Equal(t, 2, len(file.sections))
-	require.Equal(t, 3, len(file.sections[0].fields))
-	require.Equal(t, 1, len(file.sections[1].fields))
-	key := "Malus prunifolia"
+	file := Read(strings.NewReader(config))
+	require.Equal(t, 2, len(file.Sections))
+	require.Equal(t, 2, len(file.Sections[0].Fields))
+	require.Equal(t, 1, len(file.Sections[1].Fields))
+	fieldName := "Malus prunifolia"
 	value := "Chinese crabapple"
 	section := "rosaceae"
-	file = InjectField(file, key, value, section, "", true)
-	require.Equal(t, 2, len(file.sections))
-	require.Equal(t, 3, len(file.sections[0].fields))
-	require.Equal(t, 2, len(file.sections[1].fields))
-	Write(file, file.name)
-	defer os.Remove(file.name)
+	file = InjectField(file, fieldName, value, section, "", true)
+	require.Equal(t, 2, len(file.Sections))
+	require.Equal(t, 2, len(file.Sections[0].Fields))
+	require.Equal(t, 2, len(file.Sections[1].Fields))
+	Write(file, "actual")
+	defer os.Remove("actual")
 
 	expectedResult := `[hallMaRk]
 christmas = merry
@@ -105,7 +108,7 @@ Malus prunifolia = Chinese crabapple
 	}
 	defer os.Remove("expected")
 
-	require.True(t, deepCompare("test", "expected"))
+	require.True(t, deepCompare("actual", "expected"))
 }
 
 func TestHandleComments(t *testing.T) {
@@ -118,15 +121,15 @@ newyear = happy
 ; trees in the Rosaceae family
 Malus domestica = Orchard apple
 `
-	file := Read(strings.NewReader(config), "test")
-	require.Equal(t, 3, len(file.sections[1].fields))
+	file := Read(strings.NewReader(config))
+	require.Equal(t, 1, len(file.Sections[1].Fields))
 
-	key := "Malus prunifolia"
+	fieldName := "Malus prunifolia"
 	value := "Chinese crabapple"
 	section := "rosaceae"
-	file = InjectField(file, key, value, section, "", true)
-	Write(file, file.name)
-	defer os.Remove(file.name)
+	file = InjectField(file, fieldName, value, section, "", true)
+	Write(file, "actual")
+	defer os.Remove("actual")
 
 	expectedResult := `[hallMaRk]
 christmas = merry
@@ -143,8 +146,8 @@ Malus prunifolia = Chinese crabapple
 	}
 	defer os.Remove("expected")
 
-	require.Equal(t, 4, len(file.sections[1].fields))
-	require.True(t, deepCompare("test", "expected"))
+	require.Equal(t, 2, len(file.Sections[1].Fields))
+	require.True(t, deepCompare("actual", "expected"))
 }
 
 func TestHandleSubsections(t *testing.T) {
@@ -157,18 +160,18 @@ newyear = happy
 ; trees in the Rosaceae family
 Malus domestica = Orchard apple
 `
-	file := Read(strings.NewReader(config), "test")
-	require.Equal(t, 2, len(file.sections))
-	require.Equal(t, "rosaceae&subsection", file.sections[1].key)
-	require.Equal(t, "[Rosaceae \"subsection\"]", file.sections[1].str)
+	file := Read(strings.NewReader(config))
+	require.Equal(t, 2, len(file.Sections))
+	require.Equal(t, "rosaceae&subsection", file.Sections[1].Key)
+	require.Equal(t, "[Rosaceae \"subsection\"]", file.Sections[1].HeadingStr)
 
 	key := "Malus prunifolia"
 	value := "Chinese crabapple"
 	section := "rosaceae"
 	subsection := "subsection"
 	file = InjectField(file, key, value, section, subsection, true)
-	Write(file, file.name)
-	// defer os.Remove(file.name)
+	Write(file, "actual")
+	defer os.Remove("actual")
 
 	expectedResult := `[hallMaRk]
 christmas = merry
@@ -183,9 +186,9 @@ Malus prunifolia = Chinese crabapple
 	if err := os.WriteFile("expected", []byte(expectedResult), 0644); err != nil {
 		t.Errorf("Error writing file to disk")
 	}
-	// defer os.Remove("expected")
+	defer os.Remove("expected")
 
-	require.True(t, deepCompare("test", "expected"))
+	require.True(t, deepCompare("actual", "expected"))
 }
 
 func TestPreambleSection(t *testing.T) {
@@ -202,10 +205,10 @@ newyear = happy
 ; trees in the Rosaceae family
 Malus domestica = Orchard apple
 `
-	file := Read(strings.NewReader(config), "test")
-	require.Equal(t, 3, len(file.sections))
-	require.Equal(t, "_preamble", file.sections[0].key)
-	require.Equal(t, 4, len(file.sections[0].fields))
+	file := Read(strings.NewReader(config))
+	require.Equal(t, 2, len(file.Sections))
+	require.Equal(t, "hallmark", file.Sections[0].Key)
+	require.Equal(t, 2, len(file.Sections[0].Fields))
 	require.Equal(t, 12, file.numLines())
 }
 
@@ -228,13 +231,13 @@ christmas = merry
 [anotherSeCTion]
 field = value
 `
-	file := Read(strings.NewReader(config), "test")
+	file := Read(strings.NewReader(config))
 	require.Equal(t, 3, file.numLines())
 
-	file = Read(strings.NewReader(config1), "test")
+	file = Read(strings.NewReader(config1))
 	require.Equal(t, 4, file.numLines())
 
-	file = Read(strings.NewReader(config2), "test")
+	file = Read(strings.NewReader(config2))
 	require.Equal(t, 8, file.numLines())
 }
 
@@ -252,14 +255,16 @@ newyear = happy
 ; trees in the Rosaceae family
 Malus domestica = Orchard apple
 `
-	file := Read(strings.NewReader(config), "test")
+	file := Read(strings.NewReader(config))
 	key := "e"
 	value := "mc2"
 	section := "newSectION"
 	subsection := ""
 	file = InjectField(file, key, value, section, subsection, true)
-	Write(file, file.name)
-	// defer os.Remove(file.name)
+	require.Equal(t, 1, len(file.Sections[1].Fields))
+	require.Equal(t, 1, len(file.Sections[2].Fields))
+	Write(file, "actual")
+	defer os.Remove("actual")
 
 	expected := `orange = naranja
 red = rojo
@@ -280,9 +285,9 @@ e = mc2
 	if err := os.WriteFile("expected", []byte(expected), 0644); err != nil {
 		t.Errorf("Error writing file to disk")
 	}
-	// defer os.Remove("expected")
+	defer os.Remove("expected")
 
-	require.True(t, deepCompare("test", "expected"))
+	require.True(t, deepCompare("actual", "expected"))
 }
 
 func TestInjectNonRepeatableField(t *testing.T) {
@@ -299,14 +304,14 @@ newyear = happy
 ; trees in the Rosaceae family
 Malus domestica = Orchard apple
 `
-	file := Read(strings.NewReader(config), "test")
+	file := Read(strings.NewReader(config))
 	key := "newyear"
 	value := "sad"
 	section := "hallmark"
 	subsection := ""
 	file = InjectField(file, key, value, section, subsection, false)
-	Write(file, file.name)
-	defer os.Remove(file.name)
+	Write(file, "actual")
+	defer os.Remove("actual")
 
 	expected := `orange = naranja
 red = rojo
@@ -326,7 +331,7 @@ Malus domestica = Orchard apple
 	}
 	defer os.Remove("expected")
 
-	require.True(t, deepCompare("test", "expected"))
+	require.True(t, deepCompare("actual", "expected"))
 }
 
 func TestFileIsNotModified(t *testing.T) {
@@ -341,10 +346,10 @@ func TestFileIsNotModified(t *testing.T) {
 Value =    blah
 
 `
-	file := Read(strings.NewReader(config), "test")
-	require.Equal(t, 2, len(file.sections[0].fields))
-	require.Equal(t, 2, len(file.sections))
-	require.Equal(t, "[Section \"blah\"  ]   ", file.sections[1].str)
+	file := Read(strings.NewReader(config))
+	require.Equal(t, 1, len(file.Sections[0].Fields))
+	require.Equal(t, 1, len(file.Sections))
+	require.Equal(t, "[Section \"blah\"  ]   ", file.Sections[0].HeadingStr)
 	require.Equal(t, config, string(convertASTToBytes(file)))
 }
 
@@ -367,34 +372,31 @@ keep = true
 ; stuff
 stuff = stuff
 `
-	file := Read(strings.NewReader(config), "test")
-	require.Equal(t, 5, len(file.sections))
+	file := Read(strings.NewReader(config))
+	require.Equal(t, 5, len(file.Sections))
+
+	require.Equal(t, 1, len(file.Sections[0].Fields))
 
 	file = DeleteSection(file, "foo", "")
 	file = DeleteSection(file, "section", "withsubsection")
-	require.Equal(t, 2, len(file.sections))
+	require.Equal(t, 2, len(file.Sections))
 
 	expected := `[bar]
 
 [baz]
 ; keep this bit
 keep = true
-
-
-
 `
 	require.Equal(t, expected, string(convertASTToBytes(file)))
 }
 
-func TestMakeSectionFromString(t *testing.T) {
-	s := ` [ section   "subsection"  ] `
-	section := makeSectionFromString(s)
-	require.Equal(t, "section", section.name)
-	require.Equal(t, "subsection", section.subsection)
-	require.Equal(t, s, section.str)
-
-	s = `[  [ badsection ]`
-	// require.Panics(t, makeSectionFromString(s))
+func TestSectionLineHasCommentAfter(t *testing.T) {
+	config := `[foo  ] ; a comment containing an '='
+key =   value   
+[bar]
+`
+	file := Read(strings.NewReader(config))
+	require.Equal(t, 2, len(file.Sections))
 }
 
 const chunkSize = 64000

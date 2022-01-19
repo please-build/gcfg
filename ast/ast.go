@@ -1,135 +1,132 @@
 package ast
 
 import (
-	"fmt"
 	"log"
 	"regexp"
 	"strings"
 )
 
-// A File is an AST representation of a config file.
+// Comment is any whitespace or comment that is ignored by this parser
+type Comment struct {
+	Str string
+}
+
+// File is an AST representation of a config file
 type File struct {
-	name     string
-	sections []section
+	Sections      []*Section
+	CommentsAfter []*Comment // Any comments or whitespace that come at the end of a file
+	Fields        []*Field   // Fields that don't belong to a section
 }
 
-type section struct {
-	// str is the as-read section if the
-	// section was read from a config file
-	str        string
-	name       string
-	subsection string
-	key        string
-	fields     []field
+type Section struct {
+	HeadingStr     string // The literal value of this section heading
+	Name           string
+	Subsection     string
+	Key            string // Section identifier
+	Fields         []*Field
+	CommentsBefore []*Comment // Any comments or whitespace between this field and whatever came before
 }
 
-type field struct {
-	// str is the as-read field if the
-	// field was read from a config file
-	str   string
-	key   string
-	value string
-
-	// If a comment line is found, store it here
-	// and leave key and value empty
-	comment string
+type Field struct {
+	Str             string // The literal value of this line, including comments and whitespace e.g. Foo = Bar ; test
+	Name            string
+	Value           string
+	TrailingComment string     // Any comments or whitespace after the field value
+	CommentsBefore  []*Comment // Any comments or whitespace between this field and whatever came before
 }
 
 // makeSection initialises a section in the ast given a section
 // and a subsection
-func makeSection(sect, subsection string) section {
-	s := section{
-		name:       sect,
-		subsection: subsection,
-		key:        makeSectionKey(sect, subsection)}
+func makeSection(sect, subsection string) Section {
+	s := Section{
+		Name:       sect,
+		Subsection: subsection,
+		Key:        makeSectionKey(sect, subsection)}
 
 	if subsection == "" {
-		s.str = "[" + sect + "]"
+		s.HeadingStr = "[" + sect + "]"
 	} else {
-		s.str = "[" + sect + " \"" + subsection + "\"]"
+		s.HeadingStr = "[" + sect + " \"" + subsection + "\"]"
 	}
 
 	return s
 }
 
 // makeField initialises an ast field given a key and a value
-func makeField(key, value string) field {
-	return field{key: key, value: value}
+func makeField(key, value string) Field {
+	return Field{Name: key, Value: value}
 }
 
 // getStr returns the string associated with a field
-func (f field) getStr() string {
-	if f.str != "" {
-		return f.str
+func (f Field) getStr() string {
+	if f.Str != "" {
+		return f.Str
 	}
 
-	return f.key + " = " + f.value
+	return f.Name + " = " + f.Value
 }
 
-// getStr returns the string associated with a section
-func (s section) getStr() string {
-	if s.str != "" {
-		return s.str
+// getHeadingStr returns the string associated with a section
+func (s Section) getHeadingStr() string {
+	if s.HeadingStr != "" {
+		return s.HeadingStr
 	}
-	if s.subsection != "" {
-		return "[" + s.name + " " + "\"" + s.subsection + "\"]"
+	if s.Subsection != "" {
+		return "[" + s.Name + " " + "\"" + s.Subsection + "\"]"
 	}
-	return "[" + s.name + "]"
+	return "[" + s.Name + "]"
 }
 
 // makeSectionKey creates a key for identifying a section
-func makeSectionKey(sect, subsection string) string {
+func makeSectionKey(name, subsection string) string {
 	if subsection == "" {
-		return strings.ToLower(sect)
+		return strings.ToLower(name)
 	}
-	return strings.ToLower(sect) + "&" + strings.ToLower(subsection)
+	return strings.ToLower(name) + "&" + strings.ToLower(subsection)
 }
 
-// makeSectionFromString takes a string read from a config file and returns an ast section
-func makeSectionFromString(str string) section {
-	s := section{str: str}
-	// Check first if str has a
-	secAndSubReg := regexp.MustCompile(`^ *\[ *[a-zA-Z0-9_.-]+ *" *[a-zA-Z0-9_.-]+ *" *\] *$`)
-	secOnlyReg := regexp.MustCompile(`^ *\[ *[a-zA-Z0-9_.-]+ *\] *$`)
+// tryMakeSectionFromString takes a string tries to make a Section
+func tryMakeSectionFromString(line string) (Section, bool) {
+	s := Section{HeadingStr: line}
+	secAndSubReg := regexp.MustCompile(`^ *\[ *[a-zA-Z0-9_.-]+ *" *[a-zA-Z0-9_.-]+ *" *\].*`)
+	secOnlyReg := regexp.MustCompile(`^ *\[ *[a-zA-Z0-9_.-]+ *\].*`)
 
-	if secAndSubReg.MatchString(str) {
+	if secAndSubReg.MatchString(line) {
 		subsectionReg := regexp.MustCompile(`(?:" *)([a-zA-Z0-9_.-]+)(?: *")`)
-		s.subsection = subsectionReg.FindStringSubmatch(str)[1]
+		s.Subsection = strings.ToLower(subsectionReg.FindStringSubmatch(line)[1])
 		sectionReg := regexp.MustCompile(`(?:\[ *)([a-zA-Z0-9_.-]+)(?: *")`)
-		s.name = sectionReg.FindStringSubmatch(str)[1]
-		s.key = makeSectionKey(s.name, s.subsection)
-	} else if secOnlyReg.MatchString(str) {
+		s.Name = strings.ToLower(sectionReg.FindStringSubmatch(line)[1])
+		s.Key = makeSectionKey(s.Name, s.Subsection)
+		return s, true
+	}
+
+	if secOnlyReg.MatchString(line) {
 		sectionReg := regexp.MustCompile(`(?:\[ *)([a-zA-Z0-9_.-]+)(?: *\])`)
-		s.name = sectionReg.FindStringSubmatch(str)[1]
-		s.key = makeSectionKey(s.name, "")
+		s.Name = strings.ToLower(sectionReg.FindStringSubmatch(line)[1])
+		s.Key = makeSectionKey(s.Name, "")
+		return s, true
 	}
 
-	return s
+	return s, false
 }
 
-// makeFieldFromString takes a string read from a config file and returns an ast field
-func makeFieldFromString(s string) field {
-	if s == "" {
-		// A field can be a blank line
-		return field{}
-	} else if strings.HasPrefix(s, ";") || strings.HasPrefix(s, "#") {
-		// or a comment
-		return field{comment: s}
+// tryMakeFieldFromString takes a field string and tries to return an AST field
+func tryMakeFieldFromString(s string) (*Field, bool) {
+	reg := regexp.MustCompile(`^( *)([a-zA-Z0-9_ .-]+)( *= *)([a-zA-Z0-9_ /.-]+)(.*)`)
+	matches := reg.FindStringSubmatch(s)
+	if len(matches) == 0 {
+		return nil, false
 	}
 
-	ret := field{str: s}
-	keyValueReg := regexp.MustCompile(`(^ *[a-zA-Z0-9_ .-]+ *)(=)( *[a-zA-Z0-9_/ .-]+ *$)`)
-	if !(keyValueReg.MatchString(s)) {
-		log.Fatalf("Could not parse field %v", s)
-	}
+	return &Field{
+		Str:             s,
+		Name:            matches[2],
+		Value:           matches[4],
+		TrailingComment: matches[5]}, true
 
-	ret.key = keyValueReg.FindStringSubmatch(s)[1]
-	ret.value = keyValueReg.FindStringSubmatch(s)[3]
-
-	return ret
 }
 
-// GetSectionKeyFromString strips brackets from a section header and lowers it.
+// getSectionKeyFromString strips brackets from a section header and lowers it.
 // E.g. '[Something "sub"]' -> 'something "sub"'
 func getKeyFromSectionAndSubsection(sect, subsection string) string {
 	if subsection == "" {
@@ -138,92 +135,76 @@ func getKeyFromSectionAndSubsection(sect, subsection string) string {
 	return strings.ToLower(sect) + "&" + strings.ToLower(subsection)
 }
 
-// ToBytes returns a correctly formatted section header as a byte slice.
+// toBytes returns a correctly formatted section header as a byte slice.
 // Needed for writing to output file.
-func (s section) toBytes() []byte {
-	if s.key == "" {
+func (s Section) toBytes() []byte {
+	if s.Name == "" {
 		log.Fatalf("Tried to convert an empty section to byte slice")
 	}
-	str := s.getStr()
-	return []byte(str + "\n")
+	var ret string
+	for _, c := range s.CommentsBefore {
+		ret += c.Str + "\n"
+	}
+	ret += s.getHeadingStr() + "\n"
+	return []byte(ret)
 }
 
-// ToBytes returns a field as a byte slice. Needed for writing
+// toBytes returns a field as a byte slice. Needed for writing
 // to output file.
-func (f field) toBytes() []byte {
-	if f.comment != "" {
-		return []byte(f.comment + "\n")
+func (f Field) toBytes() []byte {
+	var ret string
+	for _, c := range f.CommentsBefore {
+		ret += c.Str + "\n"
 	}
-	if f.key == "" && f.value == "" {
-		return []byte("\n")
-	}
-	if f.key == "" || f.value == "" {
-		log.Fatalf("Key or value missing for field: %v", f)
-	}
-
-	s := f.getStr() + "\n"
-	return []byte(s)
+	ret += f.getStr() + "\n"
+	return []byte(ret)
 }
 
-// isBlankLine returns whether f is a field representing a blank line
-func (f field) isBlankLine() bool {
-	return f.comment == "" &&
-		f.key == "" &&
-		f.value == ""
+func (c Comment) toBytes() []byte {
+	return []byte(c.Str + "\n")
 }
 
-// PrintDebug prints an entire AST File to help with debugging.
-func (f File) PrintDebug() {
+// printDebug prints an entire AST File to help with debugging.
+func (f File) printDebug() {
 	log.Printf("----------------")
-	log.Printf("Name: %v", f.name)
 	log.Printf("Lines: %v", f.numLines())
 	log.Printf("Contents:")
-	for _, s := range f.sections {
-		log.Printf("%v", s.str)
-		for _, field := range s.fields {
-			log.Printf("%v", field.str)
+	for _, field := range f.Fields {
+		log.Printf("%v", field.getStr())
+	}
+	for _, s := range f.Sections {
+		for _, c := range s.CommentsBefore {
+			log.Printf("%v", c.Str)
 		}
+		log.Printf("%v", s.HeadingStr)
+		for _, field := range s.Fields {
+			for _, c := range field.CommentsBefore {
+				log.Printf("%v", c.Str)
+			}
+			log.Printf("%v", field.Str)
+		}
+	}
+	for _, c := range f.CommentsAfter {
+		log.Printf("%v", c.Str)
 	}
 	log.Printf("----------------")
-}
-
-// MakeSectionHeader tries to form a textual section header
-// from a string which may or may not have brackets already.
-func makeSectionHeader(s string) string {
-	n := strings.Count(s, "[")
-	n += strings.Count(s, "]")
-
-	if n > 2 {
-		panic(fmt.Sprintf("Badly-formed section header %v passed to MakeSectionHeader", s))
-	}
-	if n == 2 {
-		if strings.HasPrefix(s, "[") && strings.HasPrefix(s, "]") {
-			// This is a fully-formed section header
-			return s
-		}
-		panic(fmt.Sprintf("Badly-formed section header %v passed to MakeSectionHeader", s))
-	}
-	if n == 1 {
-		panic(fmt.Sprintf("Badly-formed section header %v passed to MakeSectionHeader", s))
-	}
-
-	return "[" + s + "]"
 }
 
 // numLines returns the number of lines in the section including the section title
-func (s section) numLines() int {
-	if s.key == "_preamble" {
-		return len(s.fields)
-	}
-
-	return len(s.fields) + 1
+func (s Section) numFields() int {
+	return len(s.Fields)
 }
 
 // numLines sums all section line counts and returns the number of lines in the file
 func (f File) numLines() int {
 	ret := 0
-	for _, s := range f.sections {
-		ret += s.numLines()
+	for _, s := range f.Sections {
+		ret += 1 + len(s.CommentsBefore)
+		for _, field := range s.Fields {
+			ret += 1 + len(field.CommentsBefore)
+		}
 	}
+	ret += len(f.CommentsAfter) + len(f.Fields)
+
 	return ret
 }
