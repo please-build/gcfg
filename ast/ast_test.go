@@ -33,8 +33,8 @@ MalusDomestica = "Orchard apple"
 	require.Equal(t, 1, file.Sections[1].numFields())
 	require.Equal(t, 6, file.numLines())
 
-	key := "Malus prunifolia"
-	value := "Chinese crabapple"
+	key := "MalusPrunifolia"
+	value := "\"Chinese crabapple\""
 	section := "rosaceae"
 
 	file = InjectField(file, key, value, section, "", true)
@@ -85,8 +85,8 @@ MalusDomestica = "Orchard apple"
 	require.Equal(t, 2, len(file.Sections))
 	require.Equal(t, 2, len(file.Sections[0].Fields))
 	require.Equal(t, 1, len(file.Sections[1].Fields))
-	fieldName := "Malus prunifolia"
-	value := "Chinese crabapple"
+	fieldName := "MalusPrunifolia"
+	value := "\"Chinese crabapple\""
 	section := "rosaceae"
 	file = InjectField(file, fieldName, value, section, "", true)
 	require.Equal(t, 2, len(file.Sections))
@@ -101,7 +101,7 @@ newyear = happy
 
 [Rosaceae]
 MalusDomestica = "Orchard apple"
-Malus prunifolia = Chinese crabapple
+MalusPrunifolia = "Chinese crabapple"
 `
 	if err := os.WriteFile("expected", []byte(expectedResult), 0644); err != nil {
 		t.Errorf("Error writing file to disk")
@@ -124,8 +124,8 @@ MalusDomestica = "Orchard apple"
 	file := Read(strings.NewReader(config))
 	require.Equal(t, 1, len(file.Sections[1].Fields))
 
-	fieldName := "Malus prunifolia"
-	value := "Chinese crabapple"
+	fieldName := "MalusPrunifolia"
+	value := "\"Chinese crabapple\""
 	section := "rosaceae"
 	file = InjectField(file, fieldName, value, section, "", true)
 	Write(file, "actual")
@@ -139,7 +139,7 @@ newyear = happy
 ; Malus is a genus of small deciduous
 ; trees in the Rosaceae family
 MalusDomestica = "Orchard apple"
-Malus prunifolia = Chinese crabapple
+MalusPrunifolia = "Chinese crabapple"
 `
 	if err := os.WriteFile("expected", []byte(expectedResult), 0644); err != nil {
 		t.Errorf("Error writing file to disk")
@@ -165,11 +165,11 @@ MalusDomestica = "Orchard apple"
 	require.Equal(t, "rosaceae&subsection", file.Sections[1].Key)
 	require.Equal(t, "[Rosaceae \"subsection\"]", file.Sections[1].HeadingStr)
 
-	key := "Malus prunifolia"
-	value := "Chinese crabapple"
+	fieldName := "MalusPrunifolia"
+	value := "\"Chinese crabapple\""
 	section := "rosaceae"
 	subsection := "subsection"
-	file = InjectField(file, key, value, section, subsection, true)
+	file = InjectField(file, fieldName, value, section, subsection, true)
 	Write(file, "actual")
 	defer os.Remove("actual")
 
@@ -181,7 +181,7 @@ newyear = happy
 ; Malus is a genus of small deciduous
 ; trees in the Rosaceae family
 MalusDomestica = "Orchard apple"
-Malus prunifolia = Chinese crabapple
+MalusPrunifolia = "Chinese crabapple"
 `
 	if err := os.WriteFile("expected", []byte(expectedResult), 0644); err != nil {
 		t.Errorf("Error writing file to disk")
@@ -434,6 +434,73 @@ another = field
 `
 	file := Read(strings.NewReader(config))
 	require.Equal(t, config, string(convertASTToBytes(file)))
+}
+
+func TestDeleteAllFieldsWithName(t *testing.T) {
+	config := `[foo]
+key = "value"
+key = foo
+key  = bar 
+key   = baz ;  comment
+yankee = doodle
+
+[bar]
+another = field
+`
+	file := Read(strings.NewReader(config))
+	file = DeleteAllFieldsWithName(file, "key", "foo", "")
+	expected := `[foo]
+yankee = doodle
+
+[bar]
+another = field
+`
+	Write(file, "actual")
+	defer os.Remove("actual")
+
+	if err := os.WriteFile("expected", []byte(expected), 0644); err != nil {
+		t.Errorf("Error writing file to disk")
+	}
+	defer os.Remove("expected")
+
+	require.True(t, deepCompare("actual", "expected"), string(convertASTToBytes(file)))
+
+}
+
+func TestMergeDuplicateSections(t *testing.T) {
+	config := `[fruits]
+fruit = apple
+
+[foo  "  Sub"]
+bar = baz
+
+[Fruits]
+fruit = banana
+
+; a comment
+[  foo "sub "]
+baz =  bar
+
+[ Fruits  ]
+ fruit =   cherry ; comment
+`
+	file := Read(strings.NewReader(config))
+	file = MergeAllDuplicateSections(file)
+
+	expected := `
+
+[fruits]
+fruit = apple
+fruit = banana
+ fruit =   cherry ; comment
+
+
+; a comment
+[foo  "  Sub"]
+bar = baz
+baz =  bar
+`
+	require.Equal(t, expected, string(convertASTToBytes(file)))
 }
 
 const chunkSize = 64000
