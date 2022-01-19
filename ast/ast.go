@@ -2,7 +2,6 @@ package ast
 
 import (
 	"log"
-	"regexp"
 	"strings"
 )
 
@@ -83,47 +82,6 @@ func makeSectionKey(name, subsection string) string {
 		return strings.ToLower(name)
 	}
 	return strings.ToLower(name) + "&" + strings.ToLower(subsection)
-}
-
-// tryMakeSectionFromString takes a string tries to make a Section
-func tryMakeSectionFromString(line string) (Section, bool) {
-	s := Section{HeadingStr: line}
-	secAndSubReg := regexp.MustCompile(`^ *\[ *[a-zA-Z0-9_.-]+ *" *[a-zA-Z0-9_.-]+ *" *\].*`)
-	secOnlyReg := regexp.MustCompile(`^ *\[ *[a-zA-Z0-9_.-]+ *\].*`)
-
-	if secAndSubReg.MatchString(line) {
-		subsectionReg := regexp.MustCompile(`(?:" *)([a-zA-Z0-9_.-]+)(?: *")`)
-		s.Subsection = strings.ToLower(subsectionReg.FindStringSubmatch(line)[1])
-		sectionReg := regexp.MustCompile(`(?:\[ *)([a-zA-Z0-9_.-]+)(?: *")`)
-		s.Name = strings.ToLower(sectionReg.FindStringSubmatch(line)[1])
-		s.Key = makeSectionKey(s.Name, s.Subsection)
-		return s, true
-	}
-
-	if secOnlyReg.MatchString(line) {
-		sectionReg := regexp.MustCompile(`(?:\[ *)([a-zA-Z0-9_.-]+)(?: *\])`)
-		s.Name = strings.ToLower(sectionReg.FindStringSubmatch(line)[1])
-		s.Key = makeSectionKey(s.Name, "")
-		return s, true
-	}
-
-	return s, false
-}
-
-// tryMakeFieldFromString takes a field string and tries to return an AST field
-func tryMakeFieldFromString(s string) (*Field, bool) {
-	reg := regexp.MustCompile(`^( *)([a-zA-Z0-9_ .-]+)( *= *)([a-zA-Z0-9_ /.-]+)(.*)`)
-	matches := reg.FindStringSubmatch(s)
-	if len(matches) == 0 {
-		return nil, false
-	}
-
-	return &Field{
-		Str:             s,
-		Name:            matches[2],
-		Value:           matches[4],
-		TrailingComment: matches[5]}, true
-
 }
 
 // getSectionKeyFromString strips brackets from a section header and lowers it.

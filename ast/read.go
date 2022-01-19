@@ -13,7 +13,7 @@ func Read(file io.Reader) File {
 	scanner := bufio.NewScanner(file)
 	commentBuffer := make([]*Comment, 0, 64)
 	fieldBuffer := make([]*Field, 0, 64)
-	fieldRegex := regexp.MustCompile(`^ *[a-zA-Z0-9_ .-]+ *= *[a-zA-Z0-9_ /.-]`)
+	fieldRegex := regexp.MustCompile(`^ *[a-zA-Z0-9_.-]+ *= *[a-zA-Z0-9_ /.-]`)
 	sectionRegex := regexp.MustCompile(`^ *\[[a-zA-Z0-9_" .-]+\]`)
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -29,7 +29,7 @@ func Read(file io.Reader) File {
 				commentBuffer = nil
 				fieldBuffer = append(fieldBuffer, field)
 			} else {
-				log.Panicf("Did not recognise line %v", line)
+				log.Panicf("could not parse field '%v'. Check the field name does not contain spaces. If the field value contains spaces, make sure to enclose the string in double quotes.", line)
 			}
 		} else if sectionRegex.MatchString(line) { // Section
 			if section, ok := tryMakeSectionFromString(line); ok {
@@ -45,7 +45,7 @@ func Read(file io.Reader) File {
 				f.Sections = append(f.Sections, &section)
 			}
 		} else { // Unrecognised
-			log.Panicf("Did not recognise line %v", line)
+			log.Panicf("did not recognise line %v", line)
 		}
 	}
 
@@ -66,40 +66,42 @@ func Read(file io.Reader) File {
 	return f
 }
 
-// Read reads a file into an ast.File struct.
-// func oldRead(file io.Reader) File {
-// 	var f File
-// 	scanner := bufio.NewScanner(file)
-//
-// 	currentSection := ""
-// 	for scanner.Scan() {
-// 		line := scanner.Text()
-// 		if strings.Contains(line, "=") || line == "" || strings.HasPrefix(line, ";") || strings.HasPrefix(line, "#") {
-// 			// Append field to the current section
-// 			if currentSection == "" || currentSection == "_preamble" {
-// 				if len(f.Sections) == 0 {
-// 					// If we're in here, then we're picking up some preamble
-// 					// which could be blank lines, comments, or something else.
-// 					sectionToAppend := makeSection("_preamble", "")
-// 					f.Sections = append(f.Sections, &sectionToAppend)
-// 					currentSection = "_preamble"
-// 				}
-// 			}
-// 			for i, s := range f.Sections {
-// 				if s.key == currentSection {
-// 					fieldToAppend := makeFieldFromString(line)
-// 					f.Sections[i].Fields = append(f.Sections[i].Fields, &fieldToAppend)
-// 				}
-// 			}
-// 		} else if matched, err := regexp.MatchString(`^ *\[.*\] *$`, line); err != nil {
-// 			log.Panicf("Error matching regexp: %v", err)
-// 		} else if matched {
-// 			// Matched a section title
-// 			sectionToAppend := makeSectionFromString(line)
-// 			f.Sections = append(f.Sections, &sectionToAppend)
-// 			currentSection = f.Sections[len(f.Sections)-1].key
-// 		}
-// 	}
-//
-// 	return f
-// }
+// tryMakeFieldFromString takes a field string and tries to return an AST field
+func tryMakeFieldFromString(s string) (*Field, bool) {
+	reg := regexp.MustCompile(`^ *( *[a-zA-Z0-9_.-]+) *= *([a-zA-Z0-9_/.-]+|"[a-zA-Z0-9_/ .-]+")( *;.*$| *$)`)
+	matches := reg.FindStringSubmatch(s)
+	if len(matches) == 0 {
+		return nil, false
+	}
+
+	return &Field{
+		Str:             s,
+		Name:            matches[1],
+		Value:           matches[2],
+		TrailingComment: matches[3]}, true
+}
+
+// tryMakeSectionFromString takes a string tries to make a Section
+func tryMakeSectionFromString(line string) (Section, bool) {
+	s := Section{HeadingStr: line}
+	secAndSubReg := regexp.MustCompile(`^ *\[ *[a-zA-Z0-9_.-]+ *" *[a-zA-Z0-9_.-]+ *" *\].*`)
+	secOnlyReg := regexp.MustCompile(`^ *\[ *[a-zA-Z0-9_.-]+ *\].*`)
+
+	if secAndSubReg.MatchString(line) {
+		subsectionReg := regexp.MustCompile(`(?:" *)([a-zA-Z0-9_.-]+)(?: *")`)
+		s.Subsection = strings.ToLower(subsectionReg.FindStringSubmatch(line)[1])
+		sectionReg := regexp.MustCompile(`(?:\[ *)([a-zA-Z0-9_.-]+)(?: *")`)
+		s.Name = strings.ToLower(sectionReg.FindStringSubmatch(line)[1])
+		s.Key = makeSectionKey(s.Name, s.Subsection)
+		return s, true
+	}
+
+	if secOnlyReg.MatchString(line) {
+		sectionReg := regexp.MustCompile(`(?:\[ *)([a-zA-Z0-9_.-]+)(?: *\])`)
+		s.Name = strings.ToLower(sectionReg.FindStringSubmatch(line)[1])
+		s.Key = makeSectionKey(s.Name, "")
+		return s, true
+	}
+
+	return s, false
+}

@@ -25,7 +25,7 @@ christmas = merry
 newyear = happy
 
 [Rosaceae]
-Malus domestica = Orchard apple
+MalusDomestica = "Orchard apple"
 `
 	file := Read(strings.NewReader(config))
 	require.Equal(t, "hallmark", file.Sections[0].Name)
@@ -58,7 +58,7 @@ christmas = merry
 newyear = happy
 
 [Rosaceae]
-Malus domestica = Orchard apple
+MalusDomestica = "Orchard apple"
 `
 	// Read config into an ast.File
 	file := Read(strings.NewReader(config))
@@ -79,7 +79,7 @@ christmas = merry
 newyear = happy
 
 [Rosaceae]
-Malus domestica = Orchard apple
+MalusDomestica = "Orchard apple"
 `
 	file := Read(strings.NewReader(config))
 	require.Equal(t, 2, len(file.Sections))
@@ -100,7 +100,7 @@ christmas = merry
 newyear = happy
 
 [Rosaceae]
-Malus domestica = Orchard apple
+MalusDomestica = "Orchard apple"
 Malus prunifolia = Chinese crabapple
 `
 	if err := os.WriteFile("expected", []byte(expectedResult), 0644); err != nil {
@@ -119,7 +119,7 @@ newyear = happy
 [Rosaceae]
 ; Malus is a genus of small deciduous
 ; trees in the Rosaceae family
-Malus domestica = Orchard apple
+MalusDomestica = "Orchard apple"
 `
 	file := Read(strings.NewReader(config))
 	require.Equal(t, 1, len(file.Sections[1].Fields))
@@ -138,7 +138,7 @@ newyear = happy
 [Rosaceae]
 ; Malus is a genus of small deciduous
 ; trees in the Rosaceae family
-Malus domestica = Orchard apple
+MalusDomestica = "Orchard apple"
 Malus prunifolia = Chinese crabapple
 `
 	if err := os.WriteFile("expected", []byte(expectedResult), 0644); err != nil {
@@ -158,7 +158,7 @@ newyear = happy
 [Rosaceae "subsection"]
 ; Malus is a genus of small deciduous
 ; trees in the Rosaceae family
-Malus domestica = Orchard apple
+MalusDomestica = "Orchard apple"
 `
 	file := Read(strings.NewReader(config))
 	require.Equal(t, 2, len(file.Sections))
@@ -180,7 +180,7 @@ newyear = happy
 [Rosaceae "subsection"]
 ; Malus is a genus of small deciduous
 ; trees in the Rosaceae family
-Malus domestica = Orchard apple
+MalusDomestica = "Orchard apple"
 Malus prunifolia = Chinese crabapple
 `
 	if err := os.WriteFile("expected", []byte(expectedResult), 0644); err != nil {
@@ -203,7 +203,7 @@ newyear = happy
 [Rosaceae "subsection"]
 ; Malus is a genus of small deciduous
 ; trees in the Rosaceae family
-Malus domestica = Orchard apple
+MalusDomestica = "Orchard apple"
 `
 	file := Read(strings.NewReader(config))
 	require.Equal(t, 2, len(file.Sections))
@@ -253,7 +253,7 @@ newyear = happy
 [Rosaceae "subsection"]
 ; Malus is a genus of small deciduous
 ; trees in the Rosaceae family
-Malus domestica = Orchard apple
+MalusDomestica = "Orchard apple"
 `
 	file := Read(strings.NewReader(config))
 	key := "e"
@@ -277,7 +277,7 @@ newyear = happy
 [Rosaceae "subsection"]
 ; Malus is a genus of small deciduous
 ; trees in the Rosaceae family
-Malus domestica = Orchard apple
+MalusDomestica = "Orchard apple"
 
 [newSectION]
 e = mc2
@@ -302,7 +302,7 @@ newyear = happy
 [Rosaceae "subsection"]
 ; Malus is a genus of small deciduous
 ; trees in the Rosaceae family
-Malus domestica = Orchard apple
+MalusDomestica = "Orchard apple"
 `
 	file := Read(strings.NewReader(config))
 	key := "newyear"
@@ -324,7 +324,7 @@ newyear = sad
 [Rosaceae "subsection"]
 ; Malus is a genus of small deciduous
 ; trees in the Rosaceae family
-Malus domestica = Orchard apple
+MalusDomestica = "Orchard apple"
 `
 	if err := os.WriteFile("expected", []byte(expected), 0644); err != nil {
 		t.Errorf("Error writing file to disk")
@@ -390,13 +390,50 @@ keep = true
 	require.Equal(t, expected, string(convertASTToBytes(file)))
 }
 
-func TestSectionLineHasCommentAfter(t *testing.T) {
+func TestSectionLineHasTrailingComment(t *testing.T) {
 	config := `[foo  ] ; a comment containing an '='
 key =   value   
 [bar]
 `
 	file := Read(strings.NewReader(config))
 	require.Equal(t, 2, len(file.Sections))
+	require.Equal(t, config, string(convertASTToBytes(file)))
+}
+
+func TestFieldHasTrailingComment(t *testing.T) {
+	config := `[foo  ] ; a comment containing an '='
+key =   value   ; a TraiLIng coMment
+[bar]
+
+another = field ; with another comment
+
+
+`
+	file := Read(strings.NewReader(config))
+	require.Equal(t, config, string(convertASTToBytes(file)))
+
+	file = InjectField(file, "key", "Zanzibar", "foo", "", false)
+	expected := `[foo  ] ; a comment containing an '='
+key = Zanzibar   ; a TraiLIng coMment
+[bar]
+
+another = field ; with another comment
+
+
+`
+	require.Equal(t, expected, string(convertASTToBytes(file)))
+
+}
+
+func TestFieldValueHasDoubleQuotes(t *testing.T) {
+	config := `[foo]
+key = "value"
+
+[bar]
+another = field
+`
+	file := Read(strings.NewReader(config))
+	require.Equal(t, config, string(convertASTToBytes(file)))
 }
 
 const chunkSize = 64000

@@ -28,7 +28,7 @@ func InjectField(f File, fieldName, fieldValue, sectionName, subsectionName stri
 				for j, k := range s.Fields {
 					if k.Name == fi.Name || strings.TrimSpace(k.Name) == fieldName {
 						f.Sections[i].Fields[j].Value = fi.Value
-						f.Sections[i].Fields[j].Str = k.Name + "= " + fi.Value
+						f.Sections[i].Fields[j].Str = k.Name + " = " + fi.Value + k.TrailingComment
 						return f
 					}
 				}
@@ -48,6 +48,14 @@ func InjectField(f File, fieldName, fieldValue, sectionName, subsectionName stri
 	s.Fields = append(s.Fields, &fi)
 	f.Sections = append(f.Sections, &s)
 	return f
+}
+
+func DeleteField(file File, fieldName, sectionName, subsectionName string) File {
+	return file
+}
+
+func DeleteFieldWithValue(file File, fieldName, fieldValue, sectionName, subsectionName string) File {
+	return file
 }
 
 // DeleteSection deletes all sections found in the AST with the name sect
