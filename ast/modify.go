@@ -24,8 +24,8 @@ func InjectField(f File, fieldName, fieldValue, sectionName, subsectionName stri
 			if !repeatable {
 				for j, k := range s.Fields {
 					if k.Name == fi.Name {
-						f.Sections[i].Fields[j].Value = fi.Value
-						f.Sections[i].Fields[j].Str = k.Name + " = " + fi.Value + k.TrailingComment
+						newField := replaceFieldValue(f.Sections[i].Fields[j], fi.Value)
+						f.Sections[i].Fields[j] = &newField
 						return f
 					}
 				}
@@ -47,10 +47,33 @@ func InjectField(f File, fieldName, fieldValue, sectionName, subsectionName stri
 	return f
 }
 
+// AppendFieldToSection appends a field to a section with no knowledge of whether the field is
+// repeatable or not. Creates a new section if section does not exist
+func AppendFieldToSection(f File, fieldName, fieldValue, sectionName, subsectionName string) File {
+	sectionKey := getKeyFromSectionAndSubsection(sectionName, subsectionName)
+	field := makeField(fieldName, fieldValue)
+	for i, s := range f.Sections {
+		if s.Key == sectionKey {
+			f.Sections[i].Fields = append(f.Sections[i].Fields, &field)
+			return f
+		}
+	}
+
+	s := makeSection(sectionName, subsectionName)
+
+	// Append blank line if file does not end with blank line
+	if len(f.CommentsAfter) == 0 {
+		s.CommentsBefore = append(s.CommentsBefore, &Comment{})
+	}
+
+	s.Fields = append(s.Fields, &field)
+	f.Sections = append(f.Sections, &s)
+	return f
+}
+
 // DeleteAllFieldsWithName deletes all fields with the name fieldName in section [sectionName "subsectionName"]
 func DeleteAllFieldsWithName(f File, fieldName, sectionName, subsectionName string) File {
 	sectionKey := getKeyFromSectionAndSubsection(sectionName, subsectionName)
-
 	for i, s := range f.Sections {
 		if s.Key == sectionKey {
 			for j := 0; j < len(s.Fields); j++ {
@@ -61,6 +84,27 @@ func DeleteAllFieldsWithName(f File, fieldName, sectionName, subsectionName stri
 						f.Sections[i].Fields = append(f.Sections[i].Fields[:j], f.Sections[i].Fields[j+1:]...)
 						j--
 					}
+				}
+			}
+		}
+	}
+	return f
+}
+
+// DeleteFieldWithValue deletes a field from a section if the name and value are fieldName and fieldValue
+func DeleteFieldWithValue(f File, fieldName, fieldValue, sectionName, subsectionName string) File {
+	sectionKey := getKeyFromSectionAndSubsection(sectionName, subsectionName)
+	for i, s := range f.Sections {
+		if s.Key == sectionKey {
+			for j := 0; j < len(s.Fields); j++ {
+				if strings.TrimSpace(s.Fields[j].Name) == strings.TrimSpace(fieldName) &&
+					strings.TrimSpace(s.Fields[j].Value) == strings.TrimSpace(fieldValue) {
+					if j == len(s.Fields)-1 {
+						f.Sections[i].Fields = f.Sections[i].Fields[:j]
+					} else {
+						f.Sections[i].Fields = append(f.Sections[i].Fields[:j], f.Sections[i].Fields[j+1:]...)
+					}
+					return f
 				}
 			}
 		}
@@ -132,8 +176,26 @@ func makeSection(sect, subsection string) Section {
 }
 
 // makeField initialises an ast field given a key and a value
-func makeField(key, value string) Field {
-	return Field{Name: key, Value: value}
+func makeField(name, value string) Field {
+	return Field{
+		Str:   name + " = " + value,
+		Name:  name,
+		Value: value,
+	}
+}
+
+func replaceFieldValue(field *Field, value string) Field {
+	str := field.Name + " = " + value
+	if !strings.HasSuffix(str, " ") && field.TrailingComment != "" {
+		str += " " + field.TrailingComment
+	}
+	return Field{
+		Str:             str,
+		Name:            field.Name,
+		Value:           value,
+		TrailingComment: field.TrailingComment,
+		CommentsBefore:  field.CommentsBefore,
+	}
 }
 
 // getSectionKeyFromString strips brackets from a section header and lowers it.

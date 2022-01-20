@@ -70,7 +70,7 @@ MalusDomestica = "Orchard apple"
 	}
 	defer os.Remove("expected")
 
-	require.True(t, deepCompare("actual", "expected"), string(convertASTToBytes(file)))
+	require.True(t, deepCompare("actual", "expected"))
 }
 
 func TestReadInjectWrite(t *testing.T) {
@@ -414,7 +414,7 @@ another = field ; with another comment
 
 	file = InjectField(file, "key", "Zanzibar", "foo", "", false)
 	expected := `[foo  ] ; a comment containing an '='
-key = Zanzibar   ; a TraiLIng coMment
+key = Zanzibar ; a TraiLIng coMment
 [bar]
 
 another = field ; with another comment
@@ -500,6 +500,52 @@ fruit = banana
 bar = baz
 baz =  bar
 `
+	require.Equal(t, expected, string(convertASTToBytes(file)))
+}
+
+func TestAppendFieldToSection(t *testing.T) {
+	config := `[fruits]
+fruit = apple ;; a comment
+
+[food "vegetables"]
+broccoli = green
+`
+	file := Read(strings.NewReader(config))
+	file = AppendFieldToSection(file, "onion", "brown", "food", "vegetables")
+	file = AppendFieldToSection(file, "fruit", "mango", "fruits", "")
+	expected := `[fruits]
+fruit = apple ;; a comment
+fruit = mango
+
+[food "vegetables"]
+broccoli = green
+onion = brown
+`
+	require.Equal(t, 2, file.Sections[1].numFields())
+	require.Equal(t, expected, string(convertASTToBytes(file)))
+}
+
+func TestDeleteFieldWithValue(t *testing.T) {
+	config := `[fruits]
+fruit = apple ;; a comment
+fruit = papaya 
+
+[food "vegetables"]
+broccoli = green
+broccoli = red
+`
+	file := Read(strings.NewReader(config))
+	file = DeleteFieldWithValue(file, "broccoli", "red", "food", "vegetables")
+	file = DeleteFieldWithValue(file, "fruit", "papaya", "fruits", "")
+	file.printDebug()
+	expected := `[fruits]
+fruit = apple ;; a comment
+
+[food "vegetables"]
+broccoli = green
+`
+	require.Equal(t, 1, file.Sections[0].numFields())
+	require.Equal(t, 1, file.Sections[1].numFields())
 	require.Equal(t, expected, string(convertASTToBytes(file)))
 }
 
