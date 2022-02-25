@@ -17,6 +17,7 @@ func InjectField(f File, fieldName, fieldValue, sectionName, subsectionName stri
 
 		// Move file's comments to this section's CommentsBefore
 		s.CommentsBefore = f.CommentsAfter
+		s.CommentsBefore = append(s.CommentsBefore, &Comment{})
 		f.CommentsAfter = nil
 
 		f.Sections = append(f.Sections, &s)
