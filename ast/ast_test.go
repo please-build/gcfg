@@ -528,7 +528,7 @@ onion = brown
 func TestDeleteFieldWithValue(t *testing.T) {
 	config := `[fruits]
 fruit = apple ;; a comment
-fruit = papaya 
+fruit = papaya
 
 [food "vegetables"]
 broccoli = green
@@ -546,6 +546,81 @@ broccoli = green
 `
 	require.Equal(t, 1, file.Sections[0].numFields())
 	require.Equal(t, 1, file.Sections[1].numFields())
+	require.Equal(t, expected, string(convertASTToBytes(file)))
+}
+
+func TestAppendBlankLineToFile(t *testing.T) {
+	config := `[fruits]
+fruit = apple ;; a comment
+fruit = papaya
+
+[food "vegetables"]
+broccoli = green
+broccoli = red
+`
+	file := Read(strings.NewReader(config))
+	file = AppendBlankLineToFile(file)
+	expected := `[fruits]
+fruit = apple ;; a comment
+fruit = papaya
+
+[food "vegetables"]
+broccoli = green
+broccoli = red
+
+`
+	require.Equal(t, expected, string(convertASTToBytes(file)))
+}
+
+func TestAppendBlankLineToCommentFile(t *testing.T) {
+	config := `;[fruits]
+;fruit = apple ;; a comment
+;fruit = papaya
+; comment
+; preamble
+`
+	file := Read(strings.NewReader(config))
+	file = AppendBlankLineToFile(file)
+	file = AppendBlankLineToFile(file)
+	file = AppendBlankLineToFile(file)
+	expected := `;[fruits]
+;fruit = apple ;; a comment
+;fruit = papaya
+; comment
+; preamble
+
+
+
+`
+	require.Equal(t, expected, string(convertASTToBytes(file)))
+}
+
+func TestAppendBlankLineToSection(t *testing.T) {
+	config := `[fruits]
+fruit = apple ;; a comment
+fruit = papaya
+; comment
+; preamble
+[vegetables]
+vegetable = broccoli
+veg = aubergine
+`
+	file := Read(strings.NewReader(config))
+	file, didSomething := AppendBlankLineToSection(file, "fruits", "")
+	require.True(t, didSomething)
+	file, didSomething = AppendBlankLineToSection(file, "vegetables", "")
+	require.True(t, didSomething)
+	expected := `[fruits]
+fruit = apple ;; a comment
+fruit = papaya
+
+; comment
+; preamble
+[vegetables]
+vegetable = broccoli
+veg = aubergine
+
+`
 	require.Equal(t, expected, string(convertASTToBytes(file)))
 }
 
