@@ -549,6 +549,20 @@ broccoli = green
 	require.Equal(t, expected, string(convertASTToBytes(file)))
 }
 
+func TestInjectFieldIntoCommentFile(t *testing.T) {
+	config := `; comment
+; preamble
+`
+	file := Read(strings.NewReader(config))
+	file = InjectField(file, "foo", "bar", "Section", "baz", false)
+	expected := `; comment
+; preamble
+[Section "baz"]
+foo = bar
+`
+	require.Equal(t, expected, string(convertASTToBytes(file)))
+}
+
 const chunkSize = 64000
 
 func deepCompare(file1, file2 string) bool {

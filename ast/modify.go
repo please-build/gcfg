@@ -14,6 +14,11 @@ func InjectField(f File, fieldName, fieldValue, sectionName, subsectionName stri
 	if len(f.Sections) == 0 {
 		s := makeSection(sectionName, subsectionName)
 		s.Fields = append(s.Fields, &fi)
+
+		// Move file's comments to this section's CommentsBefore
+		s.CommentsBefore = f.CommentsAfter
+		f.CommentsAfter = nil
+
 		f.Sections = append(f.Sections, &s)
 		return f
 	}
