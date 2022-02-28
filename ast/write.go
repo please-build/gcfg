@@ -3,6 +3,7 @@ package ast
 import (
 	"log"
 	"os"
+	"strings"
 )
 
 // Write writes an AST file to a file on disk.
@@ -44,6 +45,13 @@ func (s Section) toBytes() []byte {
 		ret += c.Str + "\n"
 	}
 	ret += s.getHeadingStr() + "\n"
+	for _, c := range s.CommentsAfter {
+		if strings.HasPrefix(c.Str, ";") {
+			ret += c.Str + "\n"
+		} else {
+			ret += "; " + c.Str + "\n"
+		}
+	}
 	return []byte(ret)
 }
 
