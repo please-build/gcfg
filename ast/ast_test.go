@@ -549,6 +549,34 @@ broccoli = green
 	require.Equal(t, expected, string(convertASTToBytes(file)))
 }
 
+func TestAddCommentsAfterToSection(t *testing.T) {
+	config := `[fruits]
+fruit = apple ;; a comment
+fruit = papaya
+
+[food "vegetables"]
+broccoli = green
+broccoli = red
+`
+	file := Read(strings.NewReader(config))
+	file, ok := AddCommentsAfterToSection(file, []string{"; comment1"}, "fruits", "")
+	require.True(t, ok)
+	file, ok = AddCommentsAfterToSection(file, []string{"comment1", "comment2"}, "food", "vegetables")
+	require.True(t, ok)
+	expected := `[fruits]
+; comment1
+fruit = apple ;; a comment
+fruit = papaya
+
+[food "vegetables"]
+; comment1
+; comment2
+broccoli = green
+broccoli = red
+`
+	require.Equal(t, expected, string(convertASTToBytes(file)))
+}
+
 func TestAppendBlankLineToFile(t *testing.T) {
 	config := `[fruits]
 fruit = apple ;; a comment
