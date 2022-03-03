@@ -528,7 +528,7 @@ onion = brown
 func TestDeleteFieldWithValue(t *testing.T) {
 	config := `[fruits]
 fruit = apple ;; a comment
-fruit = papaya 
+fruit = papaya
 
 [food "vegetables"]
 broccoli = green
@@ -549,6 +549,81 @@ broccoli = green
 	require.Equal(t, expected, string(convertASTToBytes(file)))
 }
 
+func TestAppendBlankLineToFile(t *testing.T) {
+	config := `[fruits]
+fruit = apple ;; a comment
+fruit = papaya
+
+[food "vegetables"]
+broccoli = green
+broccoli = red
+`
+	file := Read(strings.NewReader(config))
+	file = AppendBlankLineToFile(file)
+	expected := `[fruits]
+fruit = apple ;; a comment
+fruit = papaya
+
+[food "vegetables"]
+broccoli = green
+broccoli = red
+
+`
+	require.Equal(t, expected, string(convertASTToBytes(file)))
+}
+
+func TestAppendBlankLineToCommentFile(t *testing.T) {
+	config := `;[fruits]
+;fruit = apple ;; a comment
+;fruit = papaya
+; comment
+; preamble
+`
+	file := Read(strings.NewReader(config))
+	file = AppendBlankLineToFile(file)
+	file = AppendBlankLineToFile(file)
+	file = AppendBlankLineToFile(file)
+	expected := `;[fruits]
+;fruit = apple ;; a comment
+;fruit = papaya
+; comment
+; preamble
+
+
+
+`
+	require.Equal(t, expected, string(convertASTToBytes(file)))
+}
+
+func TestAppendBlankLineToSection(t *testing.T) {
+	config := `[fruits]
+fruit = apple ;; a comment
+fruit = papaya
+; comment
+; preamble
+[vegetables]
+vegetable = broccoli
+veg = aubergine
+`
+	file := Read(strings.NewReader(config))
+	file, ok := AppendBlankLineToSection(file, "fruits", "")
+	require.True(t, ok)
+	file, ok = AppendBlankLineToSection(file, "vegetables", "")
+	require.True(t, ok)
+	expected := `[fruits]
+fruit = apple ;; a comment
+fruit = papaya
+
+; comment
+; preamble
+[vegetables]
+vegetable = broccoli
+veg = aubergine
+
+`
+	require.Equal(t, expected, string(convertASTToBytes(file)))
+}
+
 func TestInjectFieldIntoCommentFile(t *testing.T) {
 	config := `; comment
 ; preamble
@@ -557,6 +632,7 @@ func TestInjectFieldIntoCommentFile(t *testing.T) {
 	file = InjectField(file, "foo", "bar", "Section", "baz", false)
 	expected := `; comment
 ; preamble
+
 [Section "baz"]
 foo = bar
 `
