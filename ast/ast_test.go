@@ -606,10 +606,10 @@ vegetable = broccoli
 veg = aubergine
 `
 	file := Read(strings.NewReader(config))
-	file, didSomething := AppendBlankLineToSection(file, "fruits", "")
-	require.True(t, didSomething)
-	file, didSomething = AppendBlankLineToSection(file, "vegetables", "")
-	require.True(t, didSomething)
+	file, ok := AppendBlankLineToSection(file, "fruits", "")
+	require.True(t, ok)
+	file, ok = AppendBlankLineToSection(file, "vegetables", "")
+	require.True(t, ok)
 	expected := `[fruits]
 fruit = apple ;; a comment
 fruit = papaya
