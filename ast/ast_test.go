@@ -619,6 +619,7 @@ fruit = papaya
 [vegetables]
 vegetable = broccoli
 veg = aubergine
+
 `
 	require.Equal(t, expected, string(convertASTToBytes(file)))
 }
@@ -631,6 +632,7 @@ func TestInjectFieldIntoCommentFile(t *testing.T) {
 	file = InjectField(file, "foo", "bar", "Section", "baz", false)
 	expected := `; comment
 ; preamble
+
 [Section "baz"]
 foo = bar
 `
