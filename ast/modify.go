@@ -65,25 +65,6 @@ func MakeNewSection(f File, sectionName, subsectionName string) (File, bool) {
 	return f, ok
 }
 
-// AddCommentsAfterToSection adds comments to the 'CommentsAfter' member of a Section.
-// This is intended to be used for comments that come immediately after a section heading.
-// Returns not ok if the section does not exist.
-func AddCommentsAfterToSection(f File, comments []string, sectionName, subsectionName string) (File, bool) {
-	ok := false
-	sectionKey := getKeyFromSectionAndSubsection(sectionName, subsectionName)
-	for i, s := range f.Sections {
-		if s.Key == sectionKey {
-			ok = true
-			for _, c_str := range comments {
-				c := &Comment{c_str}
-				f.Sections[i].CommentsAfter = append(f.Sections[i].CommentsAfter, c)
-			}
-		}
-	}
-
-	return f, ok
-}
-
 // AppendFieldToSection appends a field to a section with no knowledge of whether the field is
 // repeatable or not. Creates a new section if section does not exist
 func AppendFieldToSection(f File, fieldName, fieldValue, sectionName, subsectionName string) File {

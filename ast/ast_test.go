@@ -559,10 +559,10 @@ broccoli = green
 broccoli = red
 `
 	file := Read(strings.NewReader(config))
-	file, ok := AddCommentsAfterToSection(file, []string{"; comment1"}, "fruits", "")
-	require.True(t, ok)
-	file, ok = AddCommentsAfterToSection(file, []string{"comment1", "comment2"}, "food", "vegetables")
-	require.True(t, ok)
+	// file, ok := AddCommentsAfterToSection(file, []string{"; comment1"}, "fruits", "")
+	// require.True(t, ok)
+	// file, ok = AddCommentsAfterToSection(file, []string{"comment1", "comment2"}, "food", "vegetables")
+	// require.True(t, ok)
 	expected := `[fruits]
 ; comment1
 fruit = apple ;; a comment
