@@ -577,6 +577,96 @@ broccoli = red
 	require.Equal(t, expected, string(convertASTToBytes(file)))
 }
 
+func TestAppendBlankLineToFile(t *testing.T) {
+	config := `[fruits]
+fruit = apple ;; a comment
+fruit = papaya
+
+[food "vegetables"]
+broccoli = green
+broccoli = red
+`
+	file := Read(strings.NewReader(config))
+	file = AppendBlankLineToFile(file)
+	expected := `[fruits]
+fruit = apple ;; a comment
+fruit = papaya
+
+[food "vegetables"]
+broccoli = green
+broccoli = red
+
+`
+	require.Equal(t, expected, string(convertASTToBytes(file)))
+}
+
+func TestAppendBlankLineToCommentFile(t *testing.T) {
+	config := `;[fruits]
+;fruit = apple ;; a comment
+;fruit = papaya
+; comment
+; preamble
+`
+	file := Read(strings.NewReader(config))
+	file = AppendBlankLineToFile(file)
+	file = AppendBlankLineToFile(file)
+	file = AppendBlankLineToFile(file)
+	expected := `;[fruits]
+;fruit = apple ;; a comment
+;fruit = papaya
+; comment
+; preamble
+
+
+
+`
+	require.Equal(t, expected, string(convertASTToBytes(file)))
+}
+
+func TestAppendBlankLineToSection(t *testing.T) {
+	config := `[fruits]
+fruit = apple ;; a comment
+fruit = papaya
+; comment
+; preamble
+[vegetables]
+vegetable = broccoli
+veg = aubergine
+`
+	file := Read(strings.NewReader(config))
+	file, ok := AppendBlankLineToSection(file, "fruits", "")
+	require.True(t, ok)
+	file, ok = AppendBlankLineToSection(file, "vegetables", "")
+	require.True(t, ok)
+	expected := `[fruits]
+fruit = apple ;; a comment
+fruit = papaya
+
+; comment
+; preamble
+[vegetables]
+vegetable = broccoli
+veg = aubergine
+
+`
+	require.Equal(t, expected, string(convertASTToBytes(file)))
+}
+
+func TestInjectFieldIntoCommentFile(t *testing.T) {
+	config := `; comment
+; preamble
+`
+	file := Read(strings.NewReader(config))
+	file = InjectField(file, "foo", "bar", "Section", "baz", false)
+	expected := `; comment
+; preamble
+
+[Section "baz"]
+foo = bar
+`
+	require.Equal(t, expected, string(convertASTToBytes(file)))
+}
+
 const chunkSize = 64000
 
 func deepCompare(file1, file2 string) bool {

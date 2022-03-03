@@ -14,6 +14,12 @@ func InjectField(f File, fieldName, fieldValue, sectionName, subsectionName stri
 	if len(f.Sections) == 0 {
 		s := makeSection(sectionName, subsectionName)
 		s.Fields = append(s.Fields, &fi)
+
+		// Move file's comments to this section's CommentsBefore
+		s.CommentsBefore = f.CommentsAfter
+		s.CommentsBefore = append(s.CommentsBefore, &Comment{})
+		f.CommentsAfter = nil
+
 		f.Sections = append(f.Sections, &s)
 		return f
 	}
@@ -77,6 +83,33 @@ func AddCommentsAfterToSection(f File, comments []string, sectionName, subsectio
 			for _, c_str := range comments {
 				c := &Comment{c_str}
 				f.Sections[i].CommentsAfter = append(f.Sections[i].CommentsAfter, c)
+			}
+		}
+	}
+
+	return f, ok
+}
+
+// AppendBlankLine appends an empty line to the file.
+func AppendBlankLineToFile(f File) File {
+	f.CommentsAfter = append(f.CommentsAfter, &Comment{})
+	return f
+}
+
+// AppendBlankLineToSection appends an empty to a section
+func AppendBlankLineToSection(f File, sectionName, subsectionName string) (File, bool) {
+	sectionKey := getKeyFromSectionAndSubsection(sectionName, subsectionName)
+	ok := false
+
+	// If section exists, add empty line to top of next section, unless it's the last
+	// section, in which case add a blank line to the top of the file's 'CommentsAfter'
+	for i, s := range f.Sections {
+		if s.Key == sectionKey {
+			ok = true
+			if i == len(f.Sections)-1 { // It's the last section
+				f.CommentsAfter = append([]*Comment{{}}, f.CommentsAfter...)
+			} else {
+				f.Sections[i+1].CommentsBefore = append([]*Comment{{}}, f.Sections[i+1].CommentsBefore...)
 			}
 		}
 	}
