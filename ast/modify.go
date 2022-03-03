@@ -56,13 +56,13 @@ func AppendBlankLineToFile(f File) File {
 // AppendBlankLineToSection appends an empty to a section
 func AppendBlankLineToSection(f File, sectionName, subsectionName string) (File, bool) {
 	sectionKey := getKeyFromSectionAndSubsection(sectionName, subsectionName)
-	didSomething := false
+	ok := false
 
 	// If section exists, add empty line to top of next section, unless it's the last
 	// section, in which case add a blank line to the top of the file's 'CommentsAfter'
 	for i, s := range f.Sections {
 		if s.Key == sectionKey {
-			didSomething = true
+			ok = true
 			if i == len(f.Sections)-1 { // It's the last section
 				f.CommentsAfter = append([]*Comment{{}}, f.CommentsAfter...)
 			} else {
@@ -71,7 +71,7 @@ func AppendBlankLineToSection(f File, sectionName, subsectionName string) (File,
 		}
 	}
 
-	return f, didSomething
+	return f, ok
 }
 
 // AppendFieldToSection appends a field to a section with no knowledge of whether the field is
