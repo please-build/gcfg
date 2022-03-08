@@ -24,7 +24,6 @@ type Section struct {
 	Key            string // Section identifier
 	Fields         []*Field
 	CommentsBefore []*Comment // Any comments or whitespace between this field and whatever came before
-	CommentsAfter  []*Comment // Comments or whitespace that should specifically appear immediately after the section heading
 }
 
 type Field struct {
