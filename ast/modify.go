@@ -53,6 +53,24 @@ func InjectField(f File, fieldName, fieldValue, sectionName, subsectionName stri
 	return f
 }
 
+// MakeNewSection writes a new section heading to the file. Returns !ok if section already exists.
+func MakeNewSection(f File, sectionName, subsectionName string) (File, bool) {
+	ok := true
+	sectionKey := getKeyFromSectionAndSubsection(sectionName, subsectionName)
+	for _, s := range f.Sections {
+		if s.Key == sectionKey {
+			ok = false
+		}
+	}
+
+	if ok {
+		newSection := makeSection(sectionName, subsectionName)
+		f.Sections = append(f.Sections, &newSection)
+	}
+
+	return f, ok
+}
+
 // AppendBlankLine appends an empty line to the file.
 func AppendBlankLineToFile(f File) File {
 	f.CommentsAfter = append(f.CommentsAfter, &Comment{})
