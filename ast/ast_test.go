@@ -537,7 +537,6 @@ broccoli = red
 	file := Read(strings.NewReader(config))
 	file = DeleteFieldWithValue(file, "broccoli", "red", "food", "vegetables")
 	file = DeleteFieldWithValue(file, "fruit", "papaya", "fruits", "")
-	file.printDebug()
 	expected := `[fruits]
 fruit = apple ;; a comment
 
