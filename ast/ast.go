@@ -34,6 +34,18 @@ type Field struct {
 	CommentsBefore  []*Comment // Any comments or whitespace between this field and whatever came before
 }
 
+// MaybeGetSection returns a pointer to a section with name sectionName and subsection subsectionName.
+// Returns nil if section does not exist.
+func (f File) MaybeGetSection(sectionName, subsectionName string) *Section {
+	sectionKey := getKeyFromSectionAndSubsection(sectionName, subsectionName)
+	for i, s := range f.Sections {
+		if s.Key == sectionKey {
+			return f.Sections[i]
+		}
+	}
+	return nil
+}
+
 // getStr returns the string associated with a field
 func (f Field) getStr() string {
 	if f.Str != "" {
