@@ -13,7 +13,7 @@ func Read(file io.Reader) File {
 	scanner := bufio.NewScanner(file)
 	commentBuffer := make([]*Comment, 0, 64)
 	fieldBuffer := make([]*Field, 0, 64)
-	fieldRegex := regexp.MustCompile(`^ *[a-zA-Z0-9_.-]+ *= *[a-zA-Z0-9_ /.-]`)
+	fieldRegex := regexp.MustCompile(`^ *[a-zA-Z0-9_.-]+ *= *`)
 	sectionRegex := regexp.MustCompile(`^ *\[[a-zA-Z0-9_" .-]+\]`)
 	for scanner.Scan() {
 		line := scanner.Text()

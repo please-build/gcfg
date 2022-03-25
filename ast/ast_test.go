@@ -666,6 +666,18 @@ foo = bar
 	require.Equal(t, expected, string(convertASTToBytes(file)))
 }
 
+func TestEmptyConfigValue(t *testing.T) {
+	config := `[section]
+key = value
+key =
+key =value
+key = value ;comment
+key=;comment
+`
+	file := Read(strings.NewReader(config))
+	require.Equal(t, 5, len(file.Sections[0].Fields))
+}
+
 const chunkSize = 64000
 
 func deepCompare(file1, file2 string) bool {
