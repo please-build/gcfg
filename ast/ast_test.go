@@ -666,16 +666,20 @@ foo = bar
 	require.Equal(t, expected, string(convertASTToBytes(file)))
 }
 
-func TestEmptyConfigValue(t *testing.T) {
+func TestConfigFieldRegex(t *testing.T) {
 	config := `[section]
 key = value
 key =
 key =value
 key = value ;comment
 key=;comment
+key={value}
+key = { value  }{foo}
 `
 	file := Read(strings.NewReader(config))
-	require.Equal(t, 5, len(file.Sections[0].Fields))
+	require.Equal(t, 7, len(file.Sections[0].Fields))
+	require.Equal(t, "{value}", file.Sections[0].Fields[5].Value)
+	require.Equal(t, "{ value  }{foo}", file.Sections[0].Fields[6].Value)
 }
 
 const chunkSize = 64000
