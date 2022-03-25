@@ -668,18 +668,15 @@ foo = bar
 
 func TestConfigFieldRegex(t *testing.T) {
 	config := `[section]
-key = value
-key =
-key =value
-key = value ;comment
 key=;comment
 key={value}
 key = { value  }{foo}
 `
 	file := Read(strings.NewReader(config))
-	require.Equal(t, 7, len(file.Sections[0].Fields))
-	require.Equal(t, "{value}", file.Sections[0].Fields[5].Value)
-	require.Equal(t, "{ value  }{foo}", file.Sections[0].Fields[6].Value)
+	require.Equal(t, 3, len(file.Sections[0].Fields))
+	require.Equal(t, "", file.Sections[0].Fields[0].Value)
+	require.Equal(t, "{value}", file.Sections[0].Fields[1].Value)
+	require.Equal(t, "{ value  }{foo}", file.Sections[0].Fields[2].Value)
 }
 
 const chunkSize = 64000
