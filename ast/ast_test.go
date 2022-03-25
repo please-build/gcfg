@@ -675,7 +675,7 @@ key = { value  }{foo}
 `
 	file := Read(strings.NewReader(config))
 	require.Equal(t, 4, len(file.Sections[0].Fields))
-	require.Equal(t, "", file.Sections[0].Fields[1].Value)
+	require.Equal(t, "", file.Sections[0].Fields[0].Value)
 	require.Equal(t, "", file.Sections[0].Fields[1].Value)
 	require.Equal(t, "{value}", file.Sections[0].Fields[2].Value)
 	require.Equal(t, "{ value  }{foo}", file.Sections[0].Fields[3].Value)
