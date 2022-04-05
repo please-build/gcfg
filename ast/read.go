@@ -13,7 +13,7 @@ func Read(file io.Reader) File {
 	scanner := bufio.NewScanner(file)
 	commentBuffer := make([]*Comment, 0, 64)
 	fieldBuffer := make([]*Field, 0, 64)
-	fieldRegex := regexp.MustCompile(`^ *[a-zA-Z0-9_.-]+ *= *[a-zA-Z0-9_ /.-]`)
+	fieldRegex := regexp.MustCompile(`^ *[a-zA-Z0-9_.-]+ *= *`)
 	sectionRegex := regexp.MustCompile(`^ *\[[a-zA-Z0-9_" .-]+\]`)
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -68,7 +68,7 @@ func Read(file io.Reader) File {
 
 // tryMakeFieldFromString takes a field string and tries to return an AST field
 func tryMakeFieldFromString(s string) (*Field, bool) {
-	reg := regexp.MustCompile(`^ *([a-zA-Z0-9_.-]+) *= *([a-zA-Z0-9_@&,|"~<>/:= +.-]+)?( *;.*)?`)
+	reg := regexp.MustCompile(`^ *([a-zA-Z0-9_.-]+) *= *([a-zA-Z0-9_@{}&,|"~<>/:= +.-]+)?( *;.*)?`)
 	matches := reg.FindStringSubmatch(s)
 	if len(matches) == 0 {
 		return nil, false
