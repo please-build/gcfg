@@ -239,12 +239,10 @@ func set(c *warnings.Collector, cfg interface{}, sect, sub, name string,
 			if vSect.IsNil() {
 				vSect.Set(reflect.MakeMap(vst))
 			}
-			if value != "" {
-				if sub != "" {
-					vSect.SetMapIndex(reflect.ValueOf(sub+" "+name), reflect.ValueOf(value))
-				} else {
-					vSect.SetMapIndex(reflect.ValueOf(name), reflect.ValueOf(value))
-				}
+			if sub != "" {
+				vSect.SetMapIndex(reflect.ValueOf(sub+" "+name), reflect.ValueOf(value))
+			} else {
+				vSect.SetMapIndex(reflect.ValueOf(name), reflect.ValueOf(value))
 			}
 			return nil
 		}
