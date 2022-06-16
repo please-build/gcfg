@@ -473,7 +473,8 @@ func TestStringStringMapSection(t *testing.T) {
 	cfg := `
 	[section]
 	key = value
-	key2 = value2`
+	key2 = value2
+	key3 =`
 	err := ReadStringInto(res, cfg)
 	if err != nil {
 		t.Error(err)
@@ -483,6 +484,9 @@ func TestStringStringMapSection(t *testing.T) {
 	}
 	if res.Section["key2"] != "value2" {
 		t.Errorf("res.Section.Name=%q; want %q", res.Section["key2"], "value2")
+	}
+	if val, present := res.Section["key3"]; !present || val != "" {
+		t.Errorf("res.Section.Name=%q present=%v; want %q", res.Section["key3"], present, "")
 	}
 }
 
