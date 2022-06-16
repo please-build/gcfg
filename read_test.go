@@ -474,7 +474,7 @@ func TestStringStringMapSection(t *testing.T) {
 	[section]
 	key = value
 	key2 = value2
-    key3 =`
+	key3 =`
 	err := ReadStringInto(res, cfg)
 	if err != nil {
 		t.Error(err)
