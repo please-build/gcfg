@@ -488,6 +488,9 @@ func TestStringStringMapSection(t *testing.T) {
 	if val, present := res.Section["key3"]; !present || val != "" {
 		t.Errorf("res.Section.Name=%q present=%v; want %q", res.Section["key3"], present, "")
 	}
+	if len(res.Section) != 3 {
+		t.Errorf("Wrong number of items in section; expected 3, got %d", len(res.Section))
+	}
 }
 
 func TestFatalOnly(t *testing.T) {
