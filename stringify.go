@@ -1,10 +1,14 @@
 package gcfg
 
 import (
+	"cmp"
 	"encoding"
 	"fmt"
+	"iter"
+	"maps"
 	"math/big"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 	"unicode"
@@ -44,9 +48,9 @@ func Stringify(config interface{}) (string, error) {
 			}
 
 			if fieldStruct.Type.Elem().Kind() == reflect.String {
-				for subsection, variables := range decodeStringMap(fieldValue) {
+				for subsection, variables := range iterMap(decodeStringMap(fieldValue)) {
 					s += iniSectionLine(iniFieldName, subsection)
-					for variable, value := range variables {
+					for variable, value := range iterMap(variables) {
 						s += iniVariableLine(variable, value)
 					}
 					s += "\n"
@@ -224,4 +228,17 @@ func iterateMaybeSlice(value reflect.Value, callback func(reflect.Value) error) 
 		}
 	}
 	return nil
+}
+
+// iterMap returns an iterator over the entries of a map, in order of keys.
+func iterMap[K cmp.Ordered, V any](m map[K]V) iter.Seq2[K, V] {
+	keys := slices.Collect(maps.Keys(m))
+	slices.Sort(keys)
+	return func(yield func(K, V) bool) {
+		for _, k := range keys {
+			if !yield(k, m[k]) {
+				return
+			}
+		}
+	}
 }

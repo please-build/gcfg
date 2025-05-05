@@ -179,3 +179,32 @@ key1 = value3
 	assert.NoError(t, err)
 	assert.Equal(t, res, expectedResult)
 }
+
+func TestStringifyMapOrder(t *testing.T) {
+	config := &struct {
+		Foo map[string]string
+		Bar map[string]*struct {
+			Baz string
+		}
+	}{
+		Foo: map[string]string{
+			"a b": "1",
+			"a c": "2",
+			"d e": "3",
+			"d f": "4",
+		},
+	}
+	const expected = `[foo "a"]
+b = 1
+c = 2
+
+[foo "d"]
+e = 3
+f = 4
+
+`
+
+	res, err := Stringify(config)
+	assert.NoError(t, err)
+	assert.Equal(t, expected, res)
+}
