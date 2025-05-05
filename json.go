@@ -45,13 +45,12 @@ func RawJSON(config interface{}) ([]byte, error) {
 				res = append(res, fmt.Sprintf("\"%s\":%s,", iniFieldName, innerRes)...)
 			} else if fieldStruct.Type.Elem().Kind() == reflect.Ptr && fieldStruct.Type.Elem().Elem().Kind() == reflect.Struct {
 				res = append(res, `"`+iniFieldName+`":{`...)
-				iter := fieldValue.MapRange()
-				for iter.Next() {
-					innerRes, err := marshalStruct(iter.Value().Elem())
+				for k, v := range iterReflectMap(fieldValue) {
+					innerRes, err := marshalStruct(v.Elem())
 					if err != nil {
 						return nil, err
 					}
-					res = append(res, fmt.Sprintf("\"%s\":%s,", iter.Key(), innerRes)...)
+					res = append(res, fmt.Sprintf("\"%s\":%s,", k, innerRes)...)
 				}
 				res = append(bytes.TrimSuffix(res, []byte(",")), `},`...)
 			} else {
@@ -82,13 +81,12 @@ func marshalStruct(fieldValue reflect.Value) ([]byte, error) {
 				return nil, fmt.Errorf("Expected either a map[string]string or map[string][]string type, but instead got %s\n", subfieldStruct.Type)
 			}
 
-			iter := subfieldValue.MapRange()
-			for iter.Next() {
-				innerRes, err := json.Marshal(iter.Value().Interface())
+			for k, v := range iterReflectMap(subfieldValue) {
+				innerRes, err := json.Marshal(v.Interface())
 				if err != nil {
 					return nil, err
 				}
-				res = append(res, fmt.Sprintf("\"%s\":%s,", iter.Key(), innerRes)...)
+				res = append(res, fmt.Sprintf("\"%s\":%s,", k, innerRes)...)
 			}
 			res = bytes.TrimSuffix(res, []byte(","))
 		} else {

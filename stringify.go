@@ -93,10 +93,9 @@ func stringifyStructFields(value reflect.Value) (string, error) {
 				return "", fmt.Errorf("Expected either a map[string]string or map[string][]string type, but instead got %s\n", fieldStruct.Type)
 			}
 
-			iter := fieldValue.MapRange()
-			for iter.Next() {
-				iterateMaybeSlice(iter.Value(), func(innerValue reflect.Value) error {
-					s += iniVariableLine(iter.Key().String(), innerValue.String())
+			for k, v := range iterReflectMap(fieldValue) {
+				iterateMaybeSlice(v, func(innerValue reflect.Value) error {
+					s += iniVariableLine(k, innerValue.String())
 					return nil
 				})
 			}
