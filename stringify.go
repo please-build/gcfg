@@ -56,14 +56,13 @@ func Stringify(config interface{}) (string, error) {
 					s += "\n"
 				}
 			} else if fieldStruct.Type.Elem().Kind() == reflect.Ptr && fieldStruct.Type.Elem().Elem().Kind() == reflect.Struct {
-				iter := fieldValue.MapRange()
-				for iter.Next() {
-					iniVariableLines, err := stringifyStructFields(iter.Value().Elem())
+				for k, v := range iterReflectMap(fieldValue) {
+					iniVariableLines, err := stringifyStructFields(v.Elem())
 					if err != nil {
 						return "", err
 					}
 
-					s += iniSectionLine(iniFieldName, iter.Key().String())
+					s += iniSectionLine(iniFieldName, k)
 					s += iniVariableLines
 					s += "\n"
 				}
@@ -237,6 +236,22 @@ func iterMap[K cmp.Ordered, V any](m map[K]V) iter.Seq2[K, V] {
 	return func(yield func(K, V) bool) {
 		for _, k := range keys {
 			if !yield(k, m[k]) {
+				return
+			}
+		}
+	}
+}
+
+// iterReflectMap returns an iterator over the values of a reflected map, in order of keys.
+// It panics if v's Kind is not reflect.Map or its keys are not strings.
+func iterReflectMap(v reflect.Value) iter.Seq2[string, reflect.Value] {
+	keys := v.MapKeys()
+	slices.SortFunc(keys, func(a, b reflect.Value) int {
+		return strings.Compare(a.Interface().(string), b.Interface().(string))
+	})
+	return func(yield func(string, reflect.Value) bool) {
+		for _, k := range keys {
+			if !yield(k.Interface().(string), v.MapIndex(k)) {
 				return
 			}
 		}

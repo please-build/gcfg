@@ -193,6 +193,12 @@ func TestStringifyMapOrder(t *testing.T) {
 			"d e": "3",
 			"d f": "4",
 		},
+		Bar: map[string]*struct {
+			Baz string
+		}{
+			"k": {"m"},
+			"l": {"n"},
+		},
 	}
 	const expected = `[foo "a"]
 b = 1
@@ -201,6 +207,12 @@ c = 2
 [foo "d"]
 e = 3
 f = 4
+
+[bar "k"]
+baz = m
+
+[bar "l"]
+baz = n
 
 `
 
