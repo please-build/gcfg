@@ -1,10 +1,14 @@
 package gcfg
 
 import (
+	"cmp"
 	"encoding"
 	"fmt"
+	"iter"
+	"maps"
 	"math/big"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 	"unicode"
@@ -44,22 +48,21 @@ func Stringify(config interface{}) (string, error) {
 			}
 
 			if fieldStruct.Type.Elem().Kind() == reflect.String {
-				for subsection, variables := range decodeStringMap(fieldValue) {
+				for subsection, variables := range iterMap(decodeStringMap(fieldValue)) {
 					s += iniSectionLine(iniFieldName, subsection)
-					for variable, value := range variables {
+					for variable, value := range iterMap(variables) {
 						s += iniVariableLine(variable, value)
 					}
 					s += "\n"
 				}
 			} else if fieldStruct.Type.Elem().Kind() == reflect.Ptr && fieldStruct.Type.Elem().Elem().Kind() == reflect.Struct {
-				iter := fieldValue.MapRange()
-				for iter.Next() {
-					iniVariableLines, err := stringifyStructFields(iter.Value().Elem())
+				for k, v := range iterReflectMap(fieldValue) {
+					iniVariableLines, err := stringifyStructFields(v.Elem())
 					if err != nil {
 						return "", err
 					}
 
-					s += iniSectionLine(iniFieldName, iter.Key().String())
+					s += iniSectionLine(iniFieldName, k)
 					s += iniVariableLines
 					s += "\n"
 				}
@@ -90,10 +93,9 @@ func stringifyStructFields(value reflect.Value) (string, error) {
 				return "", fmt.Errorf("Expected either a map[string]string or map[string][]string type, but instead got %s\n", fieldStruct.Type)
 			}
 
-			iter := fieldValue.MapRange()
-			for iter.Next() {
-				iterateMaybeSlice(iter.Value(), func(innerValue reflect.Value) error {
-					s += iniVariableLine(iter.Key().String(), innerValue.String())
+			for k, v := range iterReflectMap(fieldValue) {
+				iterateMaybeSlice(v, func(innerValue reflect.Value) error {
+					s += iniVariableLine(k, innerValue.String())
 					return nil
 				})
 			}
@@ -224,4 +226,33 @@ func iterateMaybeSlice(value reflect.Value, callback func(reflect.Value) error) 
 		}
 	}
 	return nil
+}
+
+// iterMap returns an iterator over the entries of a map, in order of keys.
+func iterMap[K cmp.Ordered, V any](m map[K]V) iter.Seq2[K, V] {
+	keys := slices.Collect(maps.Keys(m))
+	slices.Sort(keys)
+	return func(yield func(K, V) bool) {
+		for _, k := range keys {
+			if !yield(k, m[k]) {
+				return
+			}
+		}
+	}
+}
+
+// iterReflectMap returns an iterator over the values of a reflected map, in order of keys.
+// It panics if v's Kind is not reflect.Map or its keys are not strings.
+func iterReflectMap(v reflect.Value) iter.Seq2[string, reflect.Value] {
+	keys := v.MapKeys()
+	slices.SortFunc(keys, func(a, b reflect.Value) int {
+		return strings.Compare(a.Interface().(string), b.Interface().(string))
+	})
+	return func(yield func(string, reflect.Value) bool) {
+		for _, k := range keys {
+			if !yield(k.Interface().(string), v.MapIndex(k)) {
+				return
+			}
+		}
+	}
 }
