@@ -169,3 +169,23 @@ func TestRawJson5(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, expectedResult, out.String())
 }
+
+func TestJSONIgnoresDash(t *testing.T) {
+	config := &struct {
+		Foo struct {
+			Bar string
+			Baz string `gcfg:"-"`
+		} `gcfg:"foo"`
+		Bar struct {
+			Quux string
+		} `gcfg:"-"`
+	}{}
+	config.Foo.Bar = "bar"
+	config.Foo.Baz = "baz"
+	config.Bar.Quux = "quux"
+	const expected = `{"foo":{"bar":"bar",}}`
+	v, err := RawJSON(config)
+	assert.NoError(t, err)
+	assert.Equal(t, expected, string(v))
+
+}
