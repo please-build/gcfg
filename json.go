@@ -25,6 +25,9 @@ func RawJSON(config interface{}) ([]byte, error) {
 		}
 
 		iniFieldName := iniKey(fieldStruct)
+		if iniFieldName == ignoreKey {
+			continue
+		}
 
 		if fieldValue.Kind() == reflect.Struct {
 			innerRes, err := marshalStruct(fieldValue)
@@ -94,7 +97,9 @@ func marshalStruct(fieldValue reflect.Value) ([]byte, error) {
 			if err != nil {
 				return nil, err
 			}
-			res = append(res, fmt.Sprintf("\"%s\":%s", iniKey(subfieldStruct), innerRes)...)
+			if key := iniKey(subfieldStruct); key != ignoreKey {
+				res = append(res, fmt.Sprintf("\"%s\":%s", key, innerRes)...)
+			}
 		}
 
 		res = append(res, ',')

@@ -15,6 +15,9 @@ import (
 	"unicode/utf8"
 )
 
+// ignoreKey is the struct key that indicates we ignore the field
+const ignoreKey = "-"
+
 // Stringify returns the ini format representation of `config`.
 func Stringify(config interface{}) (string, error) {
 	configPtr := reflect.ValueOf(config)
@@ -32,6 +35,9 @@ func Stringify(config interface{}) (string, error) {
 		}
 
 		iniFieldName := iniKey(fieldStruct)
+		if iniFieldName == ignoreKey {
+			continue
+		}
 
 		if fieldValue.Kind() == reflect.Struct {
 			iniVariableLines, err := stringifyStructFields(fieldValue)
@@ -105,7 +111,9 @@ func stringifyStructFields(value reflect.Value) (string, error) {
 				if err != nil {
 					return err
 				}
-				s += iniVariableLine(iniKey(fieldStruct), res)
+				if key := iniKey(fieldStruct); key != ignoreKey {
+					s += iniVariableLine(key, res)
+				}
 				return nil
 			}); err != nil {
 				return "", err

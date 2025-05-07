@@ -220,3 +220,25 @@ baz = n
 	assert.NoError(t, err)
 	assert.Equal(t, expected, res)
 }
+
+func TestStringifyIgnoresDash(t *testing.T) {
+	config := &struct {
+		Foo struct {
+			Bar string
+			Baz string `gcfg:"-"`
+		} `gcfg:"foo"`
+		Bar struct {
+			Quux string
+		} `gcfg:"-"`
+	}{}
+	config.Foo.Bar = "bar"
+	config.Foo.Baz = "baz"
+	config.Bar.Quux = "quux"
+	const expected = `[foo]
+bar = bar
+
+`
+	res, err := Stringify(config)
+	assert.NoError(t, err)
+	assert.Equal(t, expected, res)
+}
